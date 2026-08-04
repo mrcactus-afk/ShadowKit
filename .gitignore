@@ -1,0 +1,15 @@
+﻿# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+ShadowKit_LastCheck.txt
+popup_debug.log
+
+# User‑specific startup shortcuts (not needed in repo)
+*Startup*.lnk
+PopupLoop.vbs
+
+# Windows thumbs
+Thumbs.db
