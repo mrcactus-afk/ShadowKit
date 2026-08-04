@@ -1,26 +1,29 @@
-{
-  "watchdog": {
-    "enabled": true,
-    "intervalMinutes": 360,
-    "repairScript": "C:\\WinOpt.ps1",
-    "checkArgs": "-WhatIf",
-    "repairArgs": "-Max -Force"
-  },
-  "dns": {
-    "enabled": true,
-    "intervalMinutes": 10,
-    "fallbackDNS": ["1.1.1.1", "1.0.0.1"],
-    "serverListFile": "C:\\CATCore\\servers.json",
-    "updateURL": ""
-  },
-  "memory": {
-    "enabled": true,
-    "intervalMinutes": 5,
-    "thresholdPercent": 80,
-    "forceClean": false
-  },
-  "logging": {
-    "level": "info",
-    "maxLogSizeMB": 10
-  }
+﻿{
+    "watchdog":  {
+                     "enabled":  true,
+                     "intervalMinutes":  360,
+                     "repairScript":  "C:\\WinOpt.ps1",
+                     "checkArgs":  "-WhatIf",
+                     "repairArgs":  "-Max -Force"
+                 },
+    "dns":  {
+                "enabled":  true,
+                "intervalMinutes":  10,
+                "fallbackDNS":  [
+                                    "1.1.1.1",
+                                    "1.0.0.1"
+                                ],
+                "serverListFile":  "C:\\CATCore\\servers.json",
+                "updateURL":  ""
+            },
+    "memory":  {
+                   "enabled":  true,
+                   "intervalMinutes":  5,
+                   "thresholdPercent":  80,
+                   "forceClean":  false
+               },
+    "logging":  {
+                    "level":  "info",
+                    "maxLogSizeMB":  10
+                }
 }
