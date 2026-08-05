@@ -1,6 +1,6 @@
-<#
+﻿<#
 .SYNOPSIS
-    Uninstalls CAT Core Automation – removes scheduled task, kills processes, deletes folder.
+    Uninstalls CAT Core Automation â€“ removes scheduled task, kills processes, deletes folder.
 .DESCRIPTION
     This script stops and deletes the scheduled task, terminates any running
     MasterController processes, and optionally removes the entire C:\\ShadowKit folder.
@@ -18,7 +18,7 @@ Write-Host "=================================" -ForegroundColor Yellow
 # ---------------------------------------------------------------------
 # 1. Remove scheduled task
 # ---------------------------------------------------------------------
-$taskName = "CATCoreMaster"
+$taskName = "ShadowKitController"
 $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 if ($task) {
     Write-Host "Removing scheduled task '$taskName'..." -ForegroundColor Yellow
