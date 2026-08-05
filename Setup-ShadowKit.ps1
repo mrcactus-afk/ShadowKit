@@ -1,6 +1,6 @@
-<#
+﻿<#
 .SYNOPSIS
-    Installs CAT Core Automation – copies files, creates scheduled task, starts it.
+    Installs CAT Core Automation â€“ copies files, creates scheduled task, starts it.
 .DESCRIPTION
     Run this script as Administrator. It will:
       1. Create C:\\ShadowKit if it doesn't exist.
@@ -34,9 +34,9 @@ Copy-Item -Path ".\*" -Destination $targetDir -Recurse -Force
 # Step 2: Create scheduled task
 # ---------------------------------------------------------------------
 $taskName = "ShadowKitController"
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$targetDir\ShadowController.ps1`""
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$targetDir\ShadowController.ps1`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -Hidden
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -Hidden -MultipleInstances IgnoreNew
 
 Write-Host "Registering scheduled task '$taskName'..." -ForegroundColor Yellow
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -User "SYSTEM" -RunLevel Highest
