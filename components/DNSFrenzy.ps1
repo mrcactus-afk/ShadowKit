@@ -1,6 +1,6 @@
-param([switch]$Silent)
+ï»¿param([switch]$Silent)
 $configPath = "C:\ShadowKit\config.json"
-$serversFile = "C:\ShadowKit\servers.json"
+$serversFile = if ($dnsConfig.serverListFile) { $dnsConfig.serverListFile } else { "C:\ShadowKit\servers.json" }
 $logDir = "C:\ShadowKit\logs"
 $logFile = Join-Path $logDir "dns.log"
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
@@ -47,14 +47,14 @@ function Get-ActiveAdapter {
     $adapter = Get-NetAdapter | Where-Object {
         $_.Status -eq 'Up' -and
         $_.Virtual -ne $true -and
-        $_.Name -notmatch "Loopback|Virtual|Bluetooth|VPN|TAP|vEthernet" -and
-        $_.InterfaceDescription -notmatch "VPN|Virtual|TAP|Loopback"
+        $_.Name -notmatch "Loopback|Virtual|Bluetooth|VPN|TAP|vEthernet|tun|Tunnel|WireGuard|Nord|ZeroTier|Hamachi" -and
+        $_.InterfaceDescription -notmatch "VPN|Virtual|TAP|Loopback|tun|Tunnel|WireGuard|Nord|ZeroTier|Hamachi"
     } | Select-Object -First 1
     if ($adapter) {
         Write-DNSLog "Found adapter via fallback: $($adapter.Name)"
         return $adapter
     }
-    Write-DNSLog "No active adapter found – check network connection." "error"
+    Write-DNSLog "No active adapter found â€“ check network connection." "error"
     exit 1
 }
 
@@ -92,7 +92,7 @@ while($true){
                 }
             }
             if($scored.Count -eq 0){
-                Write-DNSLog "All servers unreachable – using fallback." "error"
+                Write-DNSLog "All servers unreachable â€“ using fallback." "error"
                 $bestPrimary = $fallbackDNS[0]
                 $bestSecondary = $fallbackDNS[1]
                 $bestName = "Fallback"
@@ -143,3 +143,5 @@ while($true){
     }
     Start-Sleep -Seconds 60
 }
+
+
