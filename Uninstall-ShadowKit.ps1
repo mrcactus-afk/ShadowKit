@@ -53,7 +53,7 @@ $folder = "C:\\ShadowKit"
 if (Test-Path $folder) {
     $answer = Read-Host "Do you want to delete the entire $folder folder? (y/n)"
     if ($answer -eq 'y' -or $answer -eq 'Y') {
-        Remove-Item -Path $folder -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path $folder -Recurse -Confirm -ErrorAction SilentlyContinue
         Write-Host "Folder deleted." -ForegroundColor Green
     } else {
         Write-Host "Folder kept." -ForegroundColor Gray

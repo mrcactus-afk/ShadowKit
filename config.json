@@ -18,7 +18,7 @@
                 "dnsMix":  true
             },
     "memory":  {
-                   "enabled":  true,
+                   "enabled":  false,
                    "intervalMinutes":  5,
                    "thresholdPercent":  80,
                    "forceClean":  false
@@ -26,5 +26,9 @@
     "logging":  {
                     "level":  "info",
                     "maxLogSizeMB":  10
-                }
+                },
+    "timer":  {
+                  "intervalMinutes":  0,
+                  "enabled":  true
+              }
 }

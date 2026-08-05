@@ -5,7 +5,7 @@
     Run this script as Administrator. It will:
       1. Create C:\\ShadowKit if it doesn't exist.
       2. Copy all files from the current folder into C:\\ShadowKit.
-      3. Register a scheduled task named 'CATCoreMaster' that launches MasterController.ps1 at startup.
+      3. Register a scheduled task named 'ShadowKitController' that launches ShadowController.ps1 at startup.
       4. Start the task immediately.
 #>
 
@@ -33,8 +33,8 @@ Copy-Item -Path ".\*" -Destination $targetDir -Recurse -Force
 # ---------------------------------------------------------------------
 # Step 2: Create scheduled task
 # ---------------------------------------------------------------------
-$taskName = "CATCoreMaster"
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$targetDir\MasterController.ps1`""
+$taskName = "ShadowKitController"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$targetDir\ShadowController.ps1`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -Hidden
 
@@ -45,6 +45,6 @@ Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Se
 # Step 3: Start the task immediately
 # ---------------------------------------------------------------------
 Write-Host "Starting the task..." -ForegroundColor Yellow
-Start-Process powershell.exe -ArgumentList "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$targetDir\MasterController.ps1`""
+Start-Process powershell.exe -ArgumentList "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$targetDir\ShadowController.ps1`""
 
 Write-Host "Installation complete. CAT Core Automation is now running and will start automatically on every boot." -ForegroundColor Green
