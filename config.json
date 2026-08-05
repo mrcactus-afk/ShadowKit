@@ -30,5 +30,10 @@
     "timer":  {
                   "intervalMinutes":  0,
                   "enabled":  true
-              }
+              },
+    "calibrator":  {
+                       "enabled":  true,
+                       "intervalMinutes":  30,
+                       "allowRisky":  false
+                   }
 }

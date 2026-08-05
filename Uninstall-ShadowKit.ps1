@@ -19,6 +19,9 @@ Write-Host "=================================" -ForegroundColor Yellow
 # 1. Remove scheduled task
 # ---------------------------------------------------------------------
 $taskName = "ShadowKitController"
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\ShadowKit\components\SystemCalibrator.ps1" -Restore -Silent
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\ShadowKit\components\SystemCalibrator.ps1" -Restore -UserScope -Silent
 $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 if ($task) {
     Write-Host "Removing scheduled task '$taskName'..." -ForegroundColor Yellow
@@ -63,3 +66,5 @@ if (Test-Path $folder) {
 }
 
 Write-Host "Uninstall completed." -ForegroundColor Cyan
+
+

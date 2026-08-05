@@ -25,9 +25,13 @@ ShadowKit is a self-healing automation system for Windows 10/11. It supervises D
 - Windows time sync disabled by external debloat causes cross-session timestamp skew; popup guard compensates.
 - TimerOptimizer hardening rewrite (runtime bounds re-validation) not deployed; current build verified functional.
 - GUI must run in the interactive session; popups cannot render from SYSTEM.
+- System Restore may be stripped by third-party debloaters; SystemCalibrator then falls back to baseline.json revert via tools\Revert-ShadowKit.ps1.
+- System Restore may be stripped by third-party debloaters; SystemCalibrator then falls back to baseline.json revert via tools\Revert-ShadowKit.ps1.
 
 ## License
 
 MIT
+
+
 
 

@@ -11,3 +11,7 @@ ShadowController.ps1.bak
 diagnostic_*.txt
 ShadowKit_Source_Dump.md
 vbs_test.txt
+
+restorepoint.json
+baseline.json
+baseline_user.json

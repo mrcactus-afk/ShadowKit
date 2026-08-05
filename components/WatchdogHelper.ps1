@@ -113,6 +113,9 @@ if ($Check) {
     if (-not (Test-JvmG1GC)) { Write-HelperLog "FAIL: JVM G1GC not configured." "error"; $allGood = $false }
     if (-not (Test-GpuPerformance)) { Write-HelperLog "FAIL: GPU high performance not set for Java." "error"; $allGood = $false }
 
+    & "$SK\components\SystemCalibrator.ps1" -Audit -Silent
+    if ($LASTEXITCODE -ne 0) { Write-HelperLog "FAIL: SystemCalibrator drift detected." "error"; $allGood = $false }
+
     if ($allGood) { Write-HelperLog "All checks passed." "info"; exit 0 } else { exit 1 }
 }
 
@@ -125,9 +128,12 @@ if ($Repair -or $Force) {
     if (-not (Test-MinecraftSettings)) { Repair-MinecraftSettings }
     if (-not (Test-JvmG1GC)) { Repair-JvmG1GC }
     if (-not (Test-GpuPerformance)) { Repair-GpuPerformance }
+    & "$SK\components\SystemCalibrator.ps1" -Once -Silent
+    schtasks /run /tn "ShadowKitCalibratorUser" 2>$null | Out-Null
     Write-HelperLog "Repair process completed." "info"
     exit 0
 }
 
 exit 0
+
 

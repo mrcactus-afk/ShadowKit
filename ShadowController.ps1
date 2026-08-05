@@ -73,6 +73,10 @@ if ($config.memory.enabled) {
     $components += @{ Name = "MemoryCleaner"; Script = Join-Path $archiveDir "MemoryCleaner.ps1" }
 }
 
+if ($config.calibrator.enabled) {
+    $components += @{ Name = "SystemCalibrator"; Script = Join-Path $componentsDir "SystemCalibrator.ps1" }
+}
+
 if ($components.Count -eq 0) {
     Write-MasterLog "No components enabled. Exiting." "error"
     exit 1
@@ -165,5 +169,6 @@ while ($true) {
         }
     }
 }
+
 
 
