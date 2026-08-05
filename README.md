@@ -20,12 +20,6 @@ ShadowKit is a self-healing automation system for Windows 10/11. It supervises D
 2. Customise `config.json` and `servers.json`.
 3. Launch the dashboard via `Launch-GUI.bat`.
 
-## Tooling
-
-- `tools\AIO-CleanRestart.ps1` – kill all generations, single clean start, singleton verification.
-- `tools\AIO-Audit.ps1` – full health audit (processes, task, live timer, live DNS, log activity, fresh errors).
-- `tools\Diagnose-ShadowKit.ps1` – state extraction report.
-
 ## Known Issues
 
 - Windows time sync disabled by external debloat causes cross-session timestamp skew; popup guard compensates.
@@ -35,4 +29,5 @@ ShadowKit is a self-healing automation system for Windows 10/11. It supervises D
 ## License
 
 MIT
+
 
