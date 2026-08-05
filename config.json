@@ -1,10 +1,10 @@
 ﻿{
     "watchdog":  {
-                     "enabled":  true,
-                     "intervalMinutes":  360,
-                     "repairScript":  "C:\\WinOpt.ps1",
-                     "checkArgs":  "-WhatIf",
-                     "repairArgs":  "-Max -Force"
+                     "repairArgs":  "-Repair",
+                     "repairScript":  "C:\\ShadowKit\\components\\WatchdogHelper.ps1",
+                     "checkArgs":  "-Check",
+                     "intervalMinutes":  5,
+                     "enabled":  true
                  },
     "dns":  {
                 "enabled":  true,
@@ -13,12 +13,12 @@
                                     "1.1.1.1",
                                     "1.0.0.1"
                                 ],
-                "serverListFile":  "C:\\CATCore\\servers.json",
+                "serverListFile":  "C:\\ShadowKit\\servers.json",
                 "updateURL":  "",
                 "dnsMix":  true
             },
     "memory":  {
-                   "enabled":  false,
+                   "enabled":  true,
                    "intervalMinutes":  5,
                    "thresholdPercent":  80,
                    "forceClean":  false
