@@ -22,12 +22,9 @@ ShadowKit is a self-healing automation system for Windows 10/11. It supervises D
 
 ## Tooling
 
-- `AIO-Fix.ps1` – controller rewrite + task re-registration.
-- `AIO-MemoryFinal.ps1` – memory cleaner final build + forced purge test.
-- `AIO-Integrity.ps1` – ErrorPopup + WatchdogHelper final builds.
-- `AIO-CleanRestart.ps1` – kill all generations, single clean start, singleton verification.
-- `AIO-Audit.ps1` – full health audit (processes, task, live timer, live DNS, log activity, fresh errors).
-- `Diagnose-ShadowKit.ps1` – state extraction report.
+- `tools\AIO-CleanRestart.ps1` – kill all generations, single clean start, singleton verification.
+- `tools\AIO-Audit.ps1` – full health audit (processes, task, live timer, live DNS, log activity, fresh errors).
+- `tools\Diagnose-ShadowKit.ps1` – state extraction report.
 
 ## Known Issues
 
@@ -38,3 +35,4 @@ ShadowKit is a self-healing automation system for Windows 10/11. It supervises D
 ## License
 
 MIT
+
