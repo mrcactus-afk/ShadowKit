@@ -28,6 +28,7 @@ if (-not $memConfig.enabled) {
 }
 
 $interval = $memConfig.intervalMinutes
+if (-not $interval -or $interval -lt 1) { $interval = 5 }
 $standbyThresholdMB = 1024
 
 $csharp = @"
@@ -124,7 +125,7 @@ function PurgeWithRetry {
     }
 
     if ([CacheCleaner]::PurgeWithSetSystemFileCacheSize()) {
-        Write-MemoryLog "Purge succeeded using SetSystemFileCacheSize fallback."
+        Write-MemoryLog "File-cache purge succeeded via SetSystemFileCacheSize (standby list NOT cleared)." "warn"
         return $true
     }
 
@@ -148,4 +149,5 @@ while ($true) {
     }
     Start-Sleep -Seconds ($interval * 60)
 }
+
 

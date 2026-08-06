@@ -1,15 +1,17 @@
 ﻿param([switch]$Silent)
 $configPath = "C:\ShadowKit\config.json"
-$serversFile = if ($dnsConfig.serverListFile) { $dnsConfig.serverListFile } else { "C:\ShadowKit\servers.json" }
+
 $logDir = "C:\ShadowKit\logs"
 $logFile = Join-Path $logDir "dns.log"
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 if (-not (Test-Path $configPath)) { Write-Error "Config missing"; exit 1 }
 $config = Get-Content $configPath | ConvertFrom-Json
 $dnsConfig = $config.dns
+$serversFile = if ($dnsConfig.serverListFile) { $dnsConfig.serverListFile } else { "C:\ShadowKit\servers.json" }
 $fallbackDNS = $dnsConfig.fallbackDNS
 $updateURL = $dnsConfig.updateURL
 $interval = $dnsConfig.intervalMinutes
+if (-not $interval -or $interval -lt 1) { $interval = 10 }
 $dnsMix = if ($dnsConfig.PSObject.Properties.Name -contains 'dnsMix') { $dnsConfig.dnsMix } else { $false }
 $cacheFile = "C:\ShadowKit\best_dns_cache.json"
 
@@ -25,7 +27,7 @@ function Get-Servers {
     return $list
 }
 
-function Test-Latency { param($IP) $ping=Test-Connection -ComputerName $IP -Count 2 -Quiet -ErrorAction SilentlyContinue; if(-not$ping){return $null}; $m=Test-Connection -ComputerName $IP -Count 2 -ErrorAction SilentlyContinue; $avg=($m|Measure-Object -Property ResponseTime -Average).Average; $loss=($m|Where-Object{$_.StatusCode-ne0}).Count/2*100; return @{Latency=$avg;Loss=$loss} }
+function Test-Latency { param($IP) $ping=Test-Connection -ComputerName $IP -Count 2 -Quiet -ErrorAction SilentlyContinue; if(-not$ping){return $null}; $m=Test-Connection -ComputerName $IP -Count 2 -ErrorAction SilentlyContinue; $avg=($m|Measure-Object -Property ResponseTime -Average).Average; if($null -eq $avg){return $null}; $loss=($m|Where-Object{$_.StatusCode-ne0}).Count/2*100; return @{Latency=$avg;Loss=$loss} }
 
 function Get-ActiveAdapter {
     $connProfile = Get-NetConnectionProfile | Where-Object { $_.IPv4Connectivity -eq 'Internet' -or $_.IPv6Connectivity -eq 'Internet' } | Select-Object -First 1
@@ -53,6 +55,12 @@ function Get-ActiveAdapter {
     if ($adapter) {
         Write-DNSLog "Found adapter via fallback: $($adapter.Name)"
         return $adapter
+    }
+    for ($w = 0; $w -lt 30; $w++) {
+        Write-DNSLog "No active adapter – waiting for network (attempt $($w+1)/30)..." "warn"
+        Start-Sleep -Seconds 10
+        $a2 = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | Select-Object -First 1
+        if ($a2) { return $a2 }
     }
     Write-DNSLog "No active adapter found – check network connection." "error"
     exit 1
@@ -135,6 +143,7 @@ while($true){
 
         $cacheObj = @{ primary = $bestPrimary; secondary = $bestSecondary; name = $bestName }
         $cacheObj | ConvertTo-Json | Out-File $cacheFile -Force
+        $currentBest = $cacheObj
         $lastTest = $now
 
         $adapter = Get-ActiveAdapter
@@ -162,6 +171,7 @@ while($true){
     }
     Start-Sleep -Seconds 60
 }
+
 
 
 

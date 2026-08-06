@@ -28,7 +28,12 @@ function Write-ShadowKitLog {
         if (-not (Test-Path $script:ShadowKitLogDir)) {
             New-Item -ItemType Directory -Path $script:ShadowKitLogDir -Force | Out-Null
         }
-        [System.IO.File]::AppendAllText($script:ShadowKitLogFile, $line + "`n", (New-Object System.Text.UTF8Encoding $true))
+        $fi = Get-Item $script:ShadowKitLogFile -ErrorAction SilentlyContinue
+        if ($fi -and $fi.Length -gt 5MB) { Move-Item $script:ShadowKitLogFile "$script:ShadowKitLogFile.old" -Force -ErrorAction SilentlyContinue }
+        for ($a = 0; $a -lt 3; $a++) {
+            try { [System.IO.File]::AppendAllText($script:ShadowKitLogFile, $line + "`n", (New-Object System.Text.UTF8Encoding $true)); break }
+            catch { Start-Sleep -Milliseconds 50 }
+        }
     } catch {
         # Logging must never break the caller. Fail silently.
     }
@@ -60,4 +65,5 @@ function Read-ShadowKitLog {
     }
     return $out
 }
+
 
