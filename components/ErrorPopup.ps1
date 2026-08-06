@@ -30,6 +30,18 @@ try {
     function Parse-LogLine {
         param([string]$Line)
         if ([string]::IsNullOrWhiteSpace($Line)) { return $null }
+        $Line = $Line.Trim()
+
+        if ($Line.StartsWith("{")) {
+            try {
+                $j = $Line | ConvertFrom-Json
+                if ($j.level -eq "error" -or $j.level -eq "warn") {
+                    return [PSCustomObject]@{ Time = [datetime]::Parse($j.ts); Level = $j.level; Message = $j.msg }
+                }
+            } catch {}
+            return $null
+        }
+
         if ($Line -match '^\[(?<ts>[^\]]+)\]\s*\[(?<level>error|warn)\]\s*(?<msg>.*)$') {
             $ts = [datetime]::MinValue
             if ([datetime]::TryParse($Matches['ts'], [ref]$ts)) {
@@ -57,7 +69,10 @@ try {
     $errors = New-Object System.Collections.Generic.List[string]
     $now = Get-Date
 
-    Get-ChildItem $logDir -Filter "*.log" -File |
+    $logFiles = @(Get-ChildItem $logDir -Filter "*.log" -File -ErrorAction SilentlyContinue)
+    $logFiles += @(Get-ChildItem $logDir -Filter "*.jsonl" -File -ErrorAction SilentlyContinue)
+
+    $logFiles |
     Where-Object { $_.Name -ne "popup.log" } |
     ForEach-Object {
         $logName = $_.Name
@@ -100,3 +115,4 @@ try {
     try { [void][System.Windows.Forms.MessageBox]::Show("ErrorPopup failed:`n$_", "ShadowKit Error", "OK", "Error") } catch {}
     exit 1
 }
+

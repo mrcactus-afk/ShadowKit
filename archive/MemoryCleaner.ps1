@@ -4,11 +4,14 @@ $logDir = "C:\ShadowKit\logs"
 $logFile = Join-Path $logDir "memory.log"
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 
+. "C:\ShadowKit\components\ShadowLogger.ps1"
+
 function Write-MemoryLog {
-    param($Message, $Level = "info")
+    param($Message, $Level = "info", $Data = @{})
     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $entry = "[$ts] [$Level] $Message"
     $entry | Out-File -Append $logFile
+    Write-ShadowKitLog -Message $Message -Level $Level -Module "MemoryCleaner" -Data $Data
     if (-not $Silent) {
         if ($Level -eq "error") { Write-Host $entry -ForegroundColor Red }
         else { Write-Host $entry -ForegroundColor Cyan }
@@ -114,7 +117,8 @@ function PurgeWithRetry {
             Write-MemoryLog "Purge succeeded using NtSetSystemInformation (attempt $($i+1))."
             return $true
         } else {
-            Write-MemoryLog "NtSetSystemInformation attempt $($i+1) failed with NTSTATUS 0x$($status.ToString("X8"))." "warn"
+            $ntHex = "0x" + $status.ToString("X8")
+            Write-MemoryLog "NtSetSystemInformation attempt $($i+1) failed with NTSTATUS $ntHex." "warn" @{ ntstatus = $ntHex; attempt = ($i + 1) }
             Start-Sleep -Seconds 1
         }
     }
@@ -144,3 +148,4 @@ while ($true) {
     }
     Start-Sleep -Seconds ($interval * 60)
 }
+
