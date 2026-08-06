@@ -62,9 +62,28 @@ $bestCache = $null
 if(Test-Path $cacheFile){ $bestCache = Get-Content $cacheFile | ConvertFrom-Json }
 $currentBest = $bestCache
 $lastTest = (Get-Date).AddMinutes(-$interval)
-Write-DNSLog "DNS Frenzy started (intelligent mode, interval ${interval}min)"
+$eventFlagFile = "C:\ShadowKit\network_changed.flag"
+
+# Register CIM event subscription for network adapter status changes
+try {
+    Register-WmiEvent -Query "SELECT * FROM __InstanceModificationEvent WITHIN 5 WHERE TargetInstance ISA 'Win32_NetworkAdapter' AND TargetInstance.NetConnectionStatus != PreviousInstance.NetConnectionStatus" -Action {
+        New-Item -ItemType File -Path "C:\ShadowKit\network_changed.flag" -Force | Out-Null
+    } -SourceIdentifier "ShadowKitNetworkWatcher" | Out-Null
+    Write-DNSLog "Network change event subscription registered"
+} catch {
+    Write-DNSLog "Failed to register network change event subscription: $_" "warn"
+}
+
+Write-DNSLog "DNS Frenzy started (intelligent mode, interval ${interval}min, event-driven enabled)"
 
 while($true){
+    # Check for event-driven network change
+    if (Test-Path $eventFlagFile) {
+        Remove-Item $eventFlagFile -Force -ErrorAction SilentlyContinue
+        Write-DNSLog "Network change detected (event-driven), forcing immediate re-test"
+        $lastTest = (Get-Date).AddMinutes(-$interval)
+    }
+    
     $now=Get-Date
     if(($now - $lastTest).TotalMinutes -ge $interval){
         Write-DNSLog "Testing servers..."
@@ -143,5 +162,7 @@ while($true){
     }
     Start-Sleep -Seconds 60
 }
+
+
 
 
