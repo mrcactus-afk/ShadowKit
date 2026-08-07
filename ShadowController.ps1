@@ -1,174 +1,87 @@
 ﻿param([switch]$Silent)
 
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    exit
+}
+
+. "C:\ShadowKit\components\ShadowIPC.ps1"
+. "C:\ShadowKit\components\ShadowLogger.ps1"
+
 $scriptDir = "C:\ShadowKit"
 $configPath = Join-Path $scriptDir "config.json"
-$logDir = Join-Path $scriptDir "logs"
 $componentsDir = Join-Path $scriptDir "components"
-$archiveDir = Join-Path $scriptDir "archive"
 
-if (-not (Test-Path $logDir)) {
-    New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-}
-
-$mutex = New-Object System.Threading.Mutex -ArgumentList $false, "Global\ShadowKitController"
-
+$mutex = New-Object System.Threading.Mutex($false, "ShadowKitController")
 $acquired = $false
-try {
-    $acquired = $mutex.WaitOne(0)
-} catch [System.Threading.AbandonedMutexException] {
-    $acquired = $true
+try { $acquired = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $acquired = $true }
+if (-not $acquired) { exit 0 }
+
+$config = Get-Content $configPath -Raw | ConvertFrom-Json
+Write-ShadowKitLog -Message "Controller v4 initializing (Runspace Plugin Loader)..." -Level info -Module Controller
+Set-ShadowStatus -Component "Controller" -Status "Starting"
+
+$plugins = @()
+$manifests = Get-ChildItem -Path $componentsDir -Filter "plugin.json" -Recurse -ErrorAction SilentlyContinue
+foreach ($m in $manifests) {
+    $man = $null
+    try { $man = Get-Content $m.FullName -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop }
+    catch { Write-ShadowKitLog -Message "Bad manifest $($m.FullName): $($_.Exception.Message)" -Level warn -Module Controller; continue }
+    $scriptPath = Join-Path $m.DirectoryName $man.EntryPoint
+    if (-not (Test-Path $scriptPath)) { Write-ShadowKitLog -Message "Manifest $($man.Name) points to missing script: $scriptPath - skipped." -Level warn -Module Controller; continue }
+    $configKey = $man.ConfigKey
+    $enabled = $true
+    if ($configKey -and $config.PSObject.Properties.Name -contains $configKey) { $enabled = [bool]$config.$configKey.enabled }
+    if ($man.Enabled -and $enabled) { $plugins += [PSCustomObject]@{ Name = $man.Name; ScriptPath = $scriptPath } }
 }
 
-if (-not $acquired) {
-    exit 0
+Write-ShadowKitLog -Message "Discovered $($plugins.Count) enabled plugins." -Level info -Module Controller
+$runspaces = @{}; $restartCounts = @{}; $nextRestart = @{}
+
+function Start-Plugin {
+    param($Plugin)
+    $rs = [runspacefactory]::CreateRunspace()
+    $rs.ApartmentState = "STA"; $rs.ThreadOptions = "ReuseThread"; $rs.Open()
+    $ps = [powershell]::Create()
+    $ps.Runspace = $rs
+    $ps.AddScript({ param($path) & $path -Silent }) | Out-Null
+    $ps.AddArgument($Plugin.ScriptPath) | Out-Null
+    $async = $ps.BeginInvoke()
+    Write-ShadowKitLog -Message "$($Plugin.Name) launched in isolated runspace." -Level info -Module Controller
+    Set-ShadowStatus -Component $Plugin.Name -Status "Running"
+    return @{ Runspace = $rs; PowerShell = $ps; Async = $async; Plugin = $Plugin }
 }
 
-if (-not (Test-Path $configPath)) {
-    exit 1
+foreach ($p in $plugins) {
+    $runspaces[$p.Name] = Start-Plugin -Plugin $p
+    $restartCounts[$p.Name] = 0
+    $nextRestart[$p.Name] = [datetime]::MinValue
 }
 
-try {
-    $config = Get-Content $configPath -Raw -ErrorAction Stop | ConvertFrom-Json
-} catch {
-    exit 1
-}
-
-function Write-MasterLog {
-    param($Message, $Level = "info")
-
-    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[" + $ts + "] [" + $Level + "] " + $Message + [Environment]::NewLine
-    $file = Join-Path $logDir ("master_" + (Get-Date -Format "yyyy-MM-dd") + ".log")
-
-    try {
-        [System.IO.File]::AppendAllText($file, $entry, [System.Text.Encoding]::Unicode)
-    } catch {}
-
-    if (-not $Silent) {
-        if ($Level -eq "error") {
-            Write-Host $entry -ForegroundColor Red
-        } else {
-            Write-Host $entry -ForegroundColor Cyan
-        }
-    }
-}
-
-Write-MasterLog "Controller initializing..."
-
-$components = @()
-
-if ($config.watchdog.enabled) {
-    $components += @{ Name = "Watchdog"; Script = Join-Path $componentsDir "Watchdog.ps1" }
-}
-
-if ($config.dns.enabled) {
-    $components += @{ Name = "DNSFrenzy"; Script = Join-Path $componentsDir "DNSFrenzy.ps1" }
-}
-
-if ($config.timer.enabled) {
-    $components += @{ Name = "TimerOptimizer"; Script = Join-Path $componentsDir "TimerOptimizer.ps1" }
-}
-
-if ($config.memory.enabled) {
-    $components += @{ Name = "MemoryCleaner"; Script = Join-Path $archiveDir "MemoryCleaner.ps1" }
-}
-
-if ($config.calibrator.enabled) {
-    $components += @{ Name = "SystemCalibrator"; Script = Join-Path $componentsDir "SystemCalibrator.ps1" }
-}
-
-if ($components.Count -eq 0) {
-    Write-MasterLog "No components enabled. Exiting." "error"
-    exit 1
-}
-
-Write-MasterLog "Master Controller started - launching components as background processes."
-
-$processes = @{}
-$restartCounts = @{}
-$restartTimes = @{}
-$maxRestarts = 3
-$restartWindowMinutes = 5
-
-function Start-ComponentProcess {
-    param($ScriptPath, $Name)
-
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = "powershell.exe"
-
-    $quoted = '"' + $ScriptPath + '"'
-    $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File " + $quoted + " -Silent"
-    $psi.CreateNoWindow = $true
-    $psi.UseShellExecute = $false
-
-    try {
-        $proc = [System.Diagnostics.Process]::Start($psi)
-        Write-MasterLog ($Name + " started (PID " + $proc.Id + ").")
-        return $proc
-    } catch {
-        Write-MasterLog ("Failed to start " + $Name + ": " + $_) "error"
-        return $null
-    }
-}
-
-foreach ($comp in $components) {
-    Write-MasterLog ("Launching " + $comp.Name + " ...")
-
-    $proc = Start-ComponentProcess -ScriptPath $comp.Script -Name $comp.Name
-
-    if ($proc) {
-        $processes[$comp.Name] = $proc
-        $restartCounts[$comp.Name] = 0
-        $restartTimes[$comp.Name] = Get-Date
-    }
-}
-
-Write-MasterLog "All components launched. Entering monitoring loop."
+Write-ShadowKitLog -Message "Entering monitoring loop." -Level info -Module Controller
+Set-ShadowStatus -Component "Controller" -Status "Running" -Data @{ Plugins = $plugins.Count }
 
 while ($true) {
-    Start-Sleep -Seconds 30
-
-    foreach ($comp in $components) {
-        $name = $comp.Name
-        $proc = $processes[$name]
-        $now = Get-Date
-
-        if ($null -ne $proc -and -not $proc.HasExited) {
-            if ($restartTimes.ContainsKey($name) -and ($now - $restartTimes[$name]).TotalMinutes -gt $restartWindowMinutes) {
-                $restartCounts[$name] = 0
-            }
-            continue
-        }
-
-        if ($null -ne $proc) {
-            $exitCode = $proc.ExitCode
-            $proc.Dispose()
-            $processes[$name] = $null
-            Write-MasterLog ($name + " process died (Exit Code: " + $exitCode + "). Restarting...") "warn"
-        } else {
-            Write-MasterLog ($name + " process missing. Starting...") "warn"
-        }
-
-        if ($restartTimes.ContainsKey($name) -and ($now - $restartTimes[$name]).TotalMinutes -gt $restartWindowMinutes) {
-            $restartCounts[$name] = 0
-        }
-
-        if ($restartCounts[$name] -ge $maxRestarts) {
-            if ($restartTimes.ContainsKey($name) -and ($now - $restartTimes[$name]).TotalSeconds -lt 60) {
-                continue
-            }
-            $restartCounts[$name] = 0
-        }
-
-        $newProc = Start-ComponentProcess -ScriptPath $comp.Script -Name $name
-
-        if ($newProc) {
-            $processes[$name] = $newProc
+    Start-Sleep -Seconds 5
+    foreach ($p in $plugins) {
+        $name = $p.Name; $state = $runspaces[$name]
+        if (-not $state) { continue }
+        if ($state.Async.IsCompleted) {
+            $err = $state.PowerShell.Streams.Error | Out-String
+            if ($err) { Write-ShadowKitLog -Message "$name crashed: $err" -Level error -Module Controller }
+            else { Write-ShadowKitLog -Message "$name exited unexpectedly." -Level warn -Module Controller }
+            $state.PowerShell.Dispose(); $state.Runspace.Close(); $state.Runspace.Dispose()
+            $runspaces[$name] = $null
             $restartCounts[$name]++
-            $restartTimes[$name] = $now
+            $delay = [math]::Min(300, [math]::Pow(2, $restartCounts[$name]))
+            Write-ShadowKitLog -Message "$name backoff: $delay seconds (restart #$($restartCounts[$name]))" -Level warn -Module Controller
+            $nextRestart[$name] = (Get-Date).AddSeconds($delay)
+            Set-ShadowStatus -Component $name -Status "Crashed" -Data @{ Restarts = $restartCounts[$name] }
+        }
+        elseif ($nextRestart[$name] -ne [datetime]::MinValue -and (Get-Date) -ge $nextRestart[$name]) {
+            Write-ShadowKitLog -Message "Restarting $name after backoff." -Level info -Module Controller
+            $runspaces[$name] = Start-Plugin -Plugin $p
+            $nextRestart[$name] = [datetime]::MinValue
         }
     }
 }
-
-
-

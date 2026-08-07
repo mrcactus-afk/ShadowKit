@@ -1,4 +1,5 @@
 ﻿param([switch]$Silent, [switch]$Audit, [switch]$Restore, [switch]$UserScope, [switch]$Once)
+. "C:\ShadowKit\components\ShadowIPC.ps1"
 $configPath = "C:\ShadowKit\config.json"
 $profilePath = "C:\ShadowKit\profile.json"
 $baselinePath = "C:\ShadowKit\baseline.json"
@@ -180,11 +181,14 @@ if ($UserScope -or $Once) {
 }
 
 Write-CalLog ("SystemCalibrator started (interval " + $cal.intervalMinutes + " min). Active entries: " + $active.Count)
+Set-ShadowStatus -Component "SystemCalibrator" -Status "Running" -Data @{ Entries = $active.Count }
 while ($true) {
     $d = Run-Pass
     if ($d -gt 0) { Write-CalLog ("Drift pass: " + $d + " entries re-applied.") "warn" }
+Set-ShadowStatus -Component "SystemCalibrator" -Status "Enforcing" -Data @{ LastDrift = $d; Time = (Get-Date).ToString("o") }
     Start-Sleep -Seconds ($cal.intervalMinutes * 60)
 }
+
 
 
 

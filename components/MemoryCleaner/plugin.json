@@ -1,0 +1,7 @@
+﻿{
+    "Name":  "MemoryCleaner",
+    "Version":  "1.0.0",
+    "EntryPoint":  "..\\..\\archive\\MemoryCleaner.ps1",
+    "Enabled":  true,
+    "ConfigKey":  "memory"
+}

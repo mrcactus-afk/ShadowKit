@@ -1,37 +1,39 @@
-﻿# ShadowKit – Windows Automation Suite (v3.0)
+﻿# ShadowKit v4 - Self-Healing Windows Automation Suite
 
-ShadowKit is a self-healing automation system for Windows 10/11. It supervises DNS selection, timer resolution, standby memory purging, and system integrity, with a GUI dashboard and error-only alerting.
+ShadowKit is an enterprise-grade, self-healing daemon architecture for Windows 10/11, written in pure PowerShell. It supervises system state, enforces performance matrices, and prevents Windows Update from undoing your debloat and optimization tweaks.
 
-## Features
+## v4 Architecture Highlights
 
-- **Singleton Controller** – global mutex prevents duplicate instances; handle-safe process supervision with restart throttling.
-- **DNS Switcher** – parallel runspace latency probing; loss-penalized scoring; TUN/tunnel/VPN adapters excluded; Iran-optimised server list.
-- **Timer Optimizer** – enforces 0.5 ms system timer resolution; verified live via NtQueryTimerResolution.
-- **Memory Cleaner** – purges standby list via NtSetSystemInformation (SystemMemoryListInformation) with correct privileges; NTSTATUS logged on failure.
-- **Watchdog** – live CIM process-state integrity checks; double-query WMI reads; detached self-repair.
-- **GUI v2.2** – async runspace performance monitor; accurate controller status; atomic config writes.
-- **Error Popup** – alerts on [error] only; clock-skew guard discards future-dated entries.
-- **Self-starting** – scheduled task at boot with MultipleInstances IgnoreNew.
-- **Log Rotation** – archives logs over 5 MB.
+- **Runspace Plugin Loader:** The ShadowController scans for plugin.json manifests and launches components in isolated .NET Runspaces with stdout/stderr crash capture and exponential backoff.
+- **Atomic IPC Status Bus:** Components publish their heartbeat and health to a mutex-guarded status.json using atomic Move-Item swaps.
+- **WPF Telemetry Dashboard:** A hardware-accelerated, dark-themed XAML dashboard that renders live CPU charts and reads the IPC bus.
+- **CTT Enforcement Matrix:** The SystemCalibrator enforces the Chris Titus Tech gaming meta (Memory Compression OFF, Mouse Accel OFF, HAGS ON, VBS OFF) every 30 minutes.
+- **GameOptimizer:** A one-shot module that applies the Ultimate performance layer (CPU min 100%, USB suspend OFF, PCIe ASPM OFF).
+
+## Core Components
+
+| Component | Role |
+|---|---|
+| **Controller** | Mutex-guarded singleton daemon. Discovers plugins, manages runspaces. |
+| **SystemCalibrator** | Declarative profile enforcement. Captures baseline, repairs drift. |
+| **DNSFrenzy** | Event-driven DNS switcher via WMI. |
+| **TimerOptimizer** | Locks 0.5ms system timer resolution. |
+| **MemoryCleaner** | NTAPI standby list purge. |
+| **GameOptimizer** | One-shot CTT gaming layer application. |
+| **GUI-WPF** | Live telemetry dashboard. |
 
 ## Installation
 
-1. Run `Setup-ShadowKit.ps1` as Administrator.
-2. Customise `config.json` and `servers.json`.
-3. Launch the dashboard via `Launch-GUI.bat`.
+1. Clone the repository: `git clone https://github.com/mrcactus-afk/ShadowKit.git`
+2. Run `.\Setup-ShadowKit.ps1` as Administrator.
+3. Customize `config.json` and `profile.json`.
+4. Launch the controller: `.\ShadowController.ps1`
+5. Launch the dashboard: `.\components\GUI-WPF.ps1`
 
-## Known Issues
+## The Self-Healing Loop
 
-- Windows time sync disabled by external debloat causes cross-session timestamp skew; popup guard compensates.
-- TimerOptimizer hardening rewrite (runtime bounds re-validation) not deployed; current build verified functional.
-- GUI must run in the interactive session; popups cannot render from SYSTEM.
-- System Restore may be stripped by third-party debloaters; SystemCalibrator then falls back to baseline.json revert via tools\Revert-ShadowKit.ps1.
-- System Restore may be stripped by third-party debloaters; SystemCalibrator then falls back to baseline.json revert via tools\Revert-ShadowKit.ps1.
+Windows Update inevitably re-enables telemetry and resets power plans. ShadowKit's SystemCalibrator runs every 30 minutes and silently reverts any drift. Your system stays stripped and optimized forever.
 
 ## License
 
-MIT
-
-
-
-
+MIT License. See LICENSE for details.

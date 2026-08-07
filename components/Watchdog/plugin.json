@@ -1,0 +1,7 @@
+﻿{
+    "Name":  "Watchdog",
+    "Version":  "1.0.0",
+    "EntryPoint":  "..\\Watchdog.ps1",
+    "Enabled":  true,
+    "ConfigKey":  "watchdog"
+}

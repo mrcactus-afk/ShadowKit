@@ -1,17 +1,12 @@
-﻿# ShadowKit – Git Ignore
+﻿# Runtime artifacts - never commit
 logs/
-*.log
-*.bak
-*.dmp
+state/
 *.tmp
-best_dns_cache.json
-code_inspection_report.txt
-ShadowKitGUI.ps1.bak
-ShadowController.ps1.bak
-diagnostic_*.txt
-ShadowKit_Source_Dump.md
-vbs_test.txt
-
-restorepoint.json
 baseline.json
 baseline_user.json
+restorepoint.json
+*.state.json
+
+# Windows junk
+Thumbs.db
+desktop.ini
