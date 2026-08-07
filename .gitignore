@@ -1,11 +1,11 @@
-﻿# Runtime artifacts - never commit
-logs/
+﻿# Runtime state & artifacts
 state/
-*.tmp
-baseline.json
-baseline_user.json
+logs/
+baseline*.json
 restorepoint.json
-*.state.json
+best_dns_cache.json
+*.cache.json
+*.tmp
 
 # Windows junk
 Thumbs.db

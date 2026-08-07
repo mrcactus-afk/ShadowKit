@@ -2,8 +2,8 @@
 . "C:\ShadowKit\components\ShadowIPC.ps1"
 $configPath = "C:\ShadowKit\config.json"
 $profilePath = "C:\ShadowKit\profile.json"
-$baselinePath = "C:\ShadowKit\baseline.json"
-if ($UserScope) { $baselinePath = "C:\ShadowKit\baseline_user.json" }
+$baselinePath = "C:\ShadowKit\state\baseline.json"
+if ($UserScope) { $baselinePath = "C:\ShadowKit\state\baseline_user.json" }
 $logDir = "C:\ShadowKit\logs"
 $logFile = Join-Path $logDir "calibrator.log"
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
@@ -117,7 +117,7 @@ if ($Restore) {
     exit 0
 }
 
-if (-not $UserScope -and -not $Audit -and -not $Once -and -not (Test-Path "C:\ShadowKit\restorepoint.json")) {
+if (-not $UserScope -and -not $Audit -and -not $Once -and -not (Test-Path "C:\ShadowKit\state\restorepoint.json")) {
     try {
         New-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore" -Name "SystemRestorePointCreationFrequency" -Value 0 -PropertyType DWord -Force -EA SilentlyContinue | Out-Null
         Enable-ComputerRestore -Drive $env:SystemDrive -EA SilentlyContinue
@@ -130,11 +130,11 @@ if (-not $UserScope -and -not $Audit -and -not $Once -and -not (Test-Path "C:\Sh
         Start-Sleep -Seconds 5
         $rp = Get-CimInstance -Namespace "root\default" -ClassName "SystemRestore" -EA SilentlyContinue | Sort-Object sequencenumber -Descending | Select-Object -First 1
         if ($rp -and $rp.Description -like "ShadowKit*") {
-            [PSCustomObject]@{ seq = $rp.sequencenumber; description = $rp.Description; created = (Get-Date).ToString("o") } | ConvertTo-Json | Set-Content "C:\ShadowKit\restorepoint.json" -Encoding UTF8
+            [PSCustomObject]@{ seq = $rp.sequencenumber; description = $rp.Description; created = (Get-Date).ToString("o") } | ConvertTo-Json | Set-Content "C:\ShadowKit\state\restorepoint.json" -Encoding UTF8
             Write-CalLog ("Restore point created and verified (seq " + $rp.sequencenumber + ").")
         } else {
             Write-CalLog "System Restore stack absent or not persisting; baseline restore remains the revert path." "warn"
-            [PSCustomObject]@{ seq = $null; description = "ShadowKit Pre-Calibration"; created = (Get-Date).ToString("o"); reason = "SR stack absent" } | ConvertTo-Json | Set-Content "C:\ShadowKit\restorepoint.json" -Encoding UTF8
+            [PSCustomObject]@{ seq = $null; description = "ShadowKit Pre-Calibration"; created = (Get-Date).ToString("o"); reason = "SR stack absent" } | ConvertTo-Json | Set-Content "C:\ShadowKit\state\restorepoint.json" -Encoding UTF8
         }
     } catch {
         Write-CalLog ("Restore point creation failed: " + $_) "error"
@@ -188,6 +188,7 @@ while ($true) {
 Set-ShadowStatus -Component "SystemCalibrator" -Status "Enforcing" -Data @{ LastDrift = $d; Time = (Get-Date).ToString("o") }
     Start-Sleep -Seconds ($cal.intervalMinutes * 60)
 }
+
 
 
 

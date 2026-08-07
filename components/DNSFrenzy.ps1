@@ -13,7 +13,7 @@ $updateURL = $dnsConfig.updateURL
 $interval = $dnsConfig.intervalMinutes
 if (-not $interval -or $interval -lt 1) { $interval = 10 }
 $dnsMix = if ($dnsConfig.PSObject.Properties.Name -contains 'dnsMix') { $dnsConfig.dnsMix } else { $false }
-$cacheFile = "C:\ShadowKit\best_dns_cache.json"
+$cacheFile = "C:\ShadowKit\state\best_dns_cache.json"
 
 function Write-DNSLog { param($m,$l="info") $ts=Get-Date -Format "yyyy-MM-dd HH:mm:ss"; $entry="[$ts] [$l] $m"; $entry|Out-File -Append $logFile; if(-not$Silent){if($l-eq"error"){Write-Host $entry -ForegroundColor Red}else{Write-Host $entry -ForegroundColor Cyan}} }
 
@@ -171,6 +171,7 @@ while($true){
     }
     Start-Sleep -Seconds 60
 }
+
 
 
 
