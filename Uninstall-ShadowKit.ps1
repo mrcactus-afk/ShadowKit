@@ -3,7 +3,7 @@
     Uninstalls CAT Core Automation â€“ removes scheduled task, kills processes, deletes folder.
 .DESCRIPTION
     This script stops and deletes the scheduled task, terminates any running
-    MasterController processes, and optionally removes the entire C:\\ShadowKit folder.
+    ShadowController processes, and optionally removes the entire C:\\ShadowKit folder.
     Run as Administrator.
 #>
 
@@ -33,11 +33,11 @@ if ($task) {
 }
 
 # ---------------------------------------------------------------------
-# 2. Kill any running MasterController processes
+# 2. Kill any running ShadowController processes
 # ---------------------------------------------------------------------
-Write-Host "Looking for running MasterController processes..." -ForegroundColor Yellow
+Write-Host "Looking for running ShadowController processes..." -ForegroundColor Yellow
 $runningProcesses = Get-Process -Name powershell -ErrorAction SilentlyContinue | Where-Object {
-    $_.CommandLine -like "*MasterController.ps1*"
+    $_.CommandLine -like "*ShadowController.ps1*"
 }
 if ($runningProcesses) {
     foreach ($proc in $runningProcesses) {
@@ -46,7 +46,7 @@ if ($runningProcesses) {
     }
     Write-Host "Processes terminated." -ForegroundColor Green
 } else {
-    Write-Host "No MasterController processes are currently running." -ForegroundColor DarkGray
+    Write-Host "No ShadowController processes are currently running." -ForegroundColor DarkGray
 }
 
 # ---------------------------------------------------------------------
@@ -66,5 +66,7 @@ if (Test-Path $folder) {
 }
 
 Write-Host "Uninstall completed." -ForegroundColor Cyan
+
+
 
 

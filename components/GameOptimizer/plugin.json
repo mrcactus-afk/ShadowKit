@@ -1,0 +1,7 @@
+﻿{
+    "EntryPoint":  "GameOptimizer-Wrapper.ps1",
+    "Name":  "GameOptimizer",
+    "Version":  "1.0.0",
+    "ConfigKey":  "gameoptimizer",
+    "Enabled":  true
+}

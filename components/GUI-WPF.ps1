@@ -1,5 +1,5 @@
 ﻿Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
-. "C:\ShadowKit\components\ShadowIPC.ps1"
+. "C:\\ShadowKit\\components\\ShadowIPC.ps1"`n. "C:\\ShadowKit\\components\\ShadowAlert.ps1"
 
 # DPI Awareness (Windows 10/11)
 if ([Environment]::OSVersion.Version.Major -ge 10) {
@@ -34,8 +34,7 @@ if ([Environment]::OSVersion.Version.Major -ge 10) {
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="150"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>`n        </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="SHADOWKIT v4 CONTROL CENTER" FontSize="22" FontWeight="Bold" Foreground="#007ACC" Margin="0,0,0,15"/>
 
@@ -58,7 +57,7 @@ if ([Environment]::OSVersion.Version.Major -ge 10) {
                      Text="Waiting for component telemetry..."/>
         </Border>
 
-        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+        <Border Grid.Row="4" Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="4" Margin="0,0,0,10"><ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="120"><StackPanel x:Name="AlertPanel" Margin="10"><TextBlock Text="No alerts" Foreground="#808080" FontSize="12" FontFamily="Consolas"/></StackPanel></ScrollViewer></Border><StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="OpenConfigBtn" Content="Open Config"/>
             <Button x:Name="ViewLogsBtn" Content="View Logs"/>
             <Button x:Name="RestartBtn" Content="Restart Controller"/>
@@ -144,6 +143,33 @@ $timer.Add_Tick({
         $y = $canvasHeight - (($cpu / 100) * $canvasHeight)
         $script:points.Add((New-Object System.Windows.Point($canvasWidth, $y)))
     }
+    # 4. Alert Panel
+    $AlertPanel.Children.Clear()
+    $alerts = Get-ShadowAlerts -UnacknowledgedOnly -Limit 10
+    if ($alerts.Count -eq 0) {
+        $tb = New-Object System.Windows.Controls.TextBlock
+        $tb.Text = "No active alerts"
+        $tb.Foreground = [System.Windows.Media.Brushes]::Gray
+        $tb.FontSize = 12
+        $tb.FontFamily = "Consolas"
+        $AlertPanel.Children.Add($tb) | Out-Null
+    } else {
+        foreach ($a in $alerts) {
+            $border = New-Object System.Windows.Controls.Border
+            $border.BorderThickness = [System.Windows.Thickness]::new(0,0,0,1)
+            $border.BorderBrush = [System.Windows.Media.Brushes]::DarkGray
+            $border.Padding = [System.Windows.Thickness]::new(0,2,0,4)
+            $border.Margin = [System.Windows.Thickness]::new(0,0,0,2)
+            $tb = New-Object System.Windows.Controls.TextBlock
+            $tb.Text = "[$($a.level.ToUpper())] [$($a.component)] $($a.message)"
+            $tb.Foreground = if ($a.level -eq "error") { [System.Windows.Media.Brushes]::Tomato } else { [System.Windows.Media.Brushes]::Gold }
+            $tb.FontSize = 11
+            $tb.FontFamily = "Consolas"
+            $tb.TextWrapping = "Wrap"
+            $border.Child = $tb
+            $AlertPanel.Children.Add($border) | Out-Null
+        }
+    }
 })
 
 $openConfigBtn.Add_Click({ Start-Process notepad "C:\ShadowKit\config.json" })
@@ -155,3 +181,4 @@ $restartBtn.Add_Click({
 
 $timer.Start()
 $window.ShowDialog() | Out-Null
+

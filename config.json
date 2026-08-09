@@ -35,5 +35,8 @@
                        "enabled":  true,
                        "intervalMinutes":  30,
                        "allowRisky":  false
-                   }
+                   },
+    "gameoptimizer":  {
+                          "enabled":  true
+                      }
 }
