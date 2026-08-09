@@ -1,17 +1,10 @@
-# Goose Installer Files
-Goose/
-Goose-win32-x64.zip
-
-# Logs
-logs/
-*.log
-
-# State files
-state/
-*.pid
-*.flag
-
-# Temporary files
+﻿*.log
+*.bak
+*.old
 *.tmp
-*.new
-all-source.txt
+controller.lock
+logs/archive/
+state/status.json
+state/alerts.json
+state/baseline*.json
+state/restorepoint.json

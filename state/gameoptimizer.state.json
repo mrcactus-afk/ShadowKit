@@ -1,0 +1,60 @@
+{
+    "Reg":  [
+                {
+                    "T":  "REG_DWORD",
+                    "P":  "HKCU\\System\\GameConfigStore",
+                    "Prior":  0,
+                    "N":  "GameDVR_Enabled"
+                },
+                {
+                    "T":  "REG_DWORD",
+                    "P":  "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR",
+                    "Prior":  0,
+                    "N":  "AllowGameDVR"
+                },
+                {
+                    "T":  "REG_DWORD",
+                    "P":  "HKCU\\Software\\Microsoft\\GameBar",
+                    "Prior":  1,
+                    "N":  "AutoGameModeEnabled"
+                },
+                {
+                    "T":  "REG_DWORD",
+                    "P":  "HKCU\\Software\\Microsoft\\GameBar",
+                    "Prior":  1,
+                    "N":  "AllowAutoGameMode"
+                },
+                {
+                    "T":  "REG_SZ",
+                    "P":  "HKCU\\Control Panel\\Mouse",
+                    "Prior":  "0",
+                    "N":  "MouseSpeed"
+                },
+                {
+                    "T":  "REG_SZ",
+                    "P":  "HKCU\\Control Panel\\Mouse",
+                    "Prior":  "0",
+                    "N":  "MouseThreshold1"
+                },
+                {
+                    "T":  "REG_SZ",
+                    "P":  "HKCU\\Control Panel\\Mouse",
+                    "Prior":  "0",
+                    "N":  "MouseThreshold2"
+                },
+                {
+                    "T":  "REG_DWORD",
+                    "P":  "HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers",
+                    "Prior":  2,
+                    "N":  "HwSchMode"
+                }
+            ],
+    "Eee":  [
+
+            ],
+    "PriorScheme":  "381b4222-f694-41f0-9685-ff5bb260df2e",
+    "Wake":  [
+
+             ],
+    "MemoryCompression":  false
+}

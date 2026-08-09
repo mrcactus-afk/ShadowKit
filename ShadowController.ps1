@@ -1,24 +1,47 @@
-﻿param([switch]$Silent)
-if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole('Administrator')) {
-    Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
-}
-. (Join-Path $PSScriptRoot 'components\ShadowIPC.ps1')
-. (Join-Path $PSScriptRoot 'components\ShadowLogger.ps1')
+﻿# No mutex – uses lock file with stale cleanup
+param([switch]$Silent)
 $scriptDir = $PSScriptRoot
+$lockFile = Join-Path $scriptDir 'controller.lock'
+
+# Check if lock file exists and is stale (older than 5 seconds)
+if (Test-Path $lockFile) {
+    $lockAge = (Get-Date) - (Get-Item $lockFile).LastWriteTime
+    if ($lockAge.TotalSeconds -lt 5) {
+        # Lock is fresh – another controller is running
+        Write-Host "$(Get-Date) - Lock file present and fresh, exiting." -ForegroundColor Yellow
+        exit 0
+    } else {
+        # Lock is stale – remove it
+        Write-Host "$(Get-Date) - Stale lock file found, removing." -ForegroundColor Yellow
+        Remove-Item $lockFile -Force
+    }
+}
+
+# Create lock file
+try {
+    New-Item -ItemType File -Path $lockFile -Force | Out-Null
+} catch {
+    Write-Host "$(Get-Date) - Failed to create lock file, exiting." -ForegroundColor Red
+    exit 1
+}
+
+# Ensure lock file is removed on exit
+$null = Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action { Remove-Item $lockFile -Force -ErrorAction SilentlyContinue }
+
+# Now proceed with controller logic
+. (Join-Path $scriptDir 'components\ShadowIPC.ps1')
+. (Join-Path $scriptDir 'components\ShadowLogger.ps1')
 $configPath = Join-Path $scriptDir 'config.json'
-if (-not (Test-Path $configPath)) { Write-ShadowKitLog 'Config missing' error Controller; exit 1 }
+if (-not (Test-Path $configPath)) { Write-ShadowKitLog 'Config missing' error Controller; Remove-Item $lockFile -Force; exit 1 }
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
-$mutex = New-Object System.Threading.Mutex($false, 'ShadowKitController')
-if (-not $mutex.WaitOne(0)) { Write-ShadowKitLog 'Another controller running' info Controller; exit 0 }
-Write-ShadowKitLog 'Controller started' info Controller
+Write-ShadowKitLog 'Controller started (lock file)' info Controller
 
 $plugins = @()
 Get-ChildItem -Path (Join-Path $scriptDir 'components') -Filter 'plugin.json' -Recurse | ForEach-Object {
     $man = $_ | Get-Content -Raw | ConvertFrom-Json -ErrorAction SilentlyContinue
     if (-not $man) { return }
     $scriptPath = $man.EntryPoint
-    if (-not (Test-Path $scriptPath)) { 
-        # If the path is relative, try to resolve it from the manifest directory
+    if (-not (Test-Path $scriptPath)) {
         $relPath = Join-Path $_.DirectoryName $man.EntryPoint
         if (Test-Path $relPath) { $scriptPath = $relPath }
         else { return }
@@ -27,7 +50,7 @@ Get-ChildItem -Path (Join-Path $scriptDir 'components') -Filter 'plugin.json' -R
     if ($man.ConfigKey -and $config.PSObject.Properties.Name -contains $man.ConfigKey) {
         $enabled = [bool]$config.$($man.ConfigKey).enabled
     }
-    if ($man.Enabled -and $enabled) { 
+    if ($man.Enabled -and $enabled) {
         $plugins += [PSCustomObject]@{ Name = $man.Name; ScriptPath = $scriptPath }
         Write-ShadowKitLog "Plugin enabled: $($man.Name)" info Controller
     }

@@ -1,0 +1,75 @@
+﻿ShadowKit Diagnostic 2026-08-09T11:53:06.1916235+03:30
+
+=== Scheduled Task ===
+State: Running
+
+=== Processes ===
+"C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\ShadowKit\ShadowController.ps1"
+
+=== Log Tails ===
+--- timer.log ---
+[2026-08-09 11:48:47] [info] Timer resolution set to 0.5 ms (minimum)
+[2026-08-09 11:49:47] [info] Timer resolution set to 0.5 ms (minimum)
+[2026-08-09 11:50:47] [info] Timer resolution set to 0.5 ms (minimum)
+[2026-08-09 11:51:47] [info] Timer resolution set to 0.5 ms (minimum)
+[2026-08-09 11:52:47] [info] Timer resolution set to 0.5 ms (minimum)
+--- dns.log ---
+[2026-08-09 11:51:35] [info] DNS mixing enabled: primary from Lag Zero, secondary from Electro
+[2026-08-09 11:51:35] [info] Found internet adapter via connection profile: tun0
+[2026-08-09 11:51:35] [info] Selected adapter: tun0 (Index 6)
+[2026-08-09 11:51:35] [info] DNS set to primary: 95.38.132.153, secondary: 78.157.42.101 (Lag Zero)
+[2026-08-09 11:52:35] [info] Using cached best server: Lag Zero (95.38.132.153)
+--- memory.log ---
+[2026-08-09 11:36:48] [info] Standby: 989.9 MB – below threshold, skipping.
+[2026-08-09 11:40:47] [info] MemoryCleaner started (interval: 5min) – NtSetSystemInformation primary
+[2026-08-09 11:40:48] [info] Standby: 990 MB – below threshold, skipping.
+[2026-08-09 11:45:49] [info] Standby: 999.9 MB – below threshold, skipping.
+[2026-08-09 11:50:50] [info] Standby: 1000.5 MB – below threshold, skipping.
+--- calibrator.log ---
+[2026-08-09 11:26:45] [info] Applied power active -> 381b4222-f694-41f0-9685-ff5bb260df2e (was eab9a41c-b121-403e-b35a-e2b9936e80df)
+[2026-08-09 11:26:45] [warn] Drift pass: 1 entries re-applied.
+[2026-08-09 11:40:47] [info] SystemCalibrator started (interval 30 min). Active entries: 10
+[2026-08-09 11:40:48] [info] Applied power active -> 381b4222-f694-41f0-9685-ff5bb260df2e (was df77cebf-5dc1-4e17-aa02-5f3e16c0af73)
+[2026-08-09 11:40:48] [warn] Drift pass: 1 entries re-applied.
+--- rotation.log ---
+[2026-08-08 22:21:01] [info] No logs needed rotation.
+[2026-08-09 10:21:01] [info] Log rotation started.
+[2026-08-09 10:21:01] [info] No logs needed rotation.
+[2026-08-09 11:21:01] [info] Log rotation started.
+[2026-08-09 11:21:01] [info] No logs needed rotation.
+--- popup.log ---
+[2026-08-08 22:26:06] [info] No recent errors; popup skipped.
+[2026-08-08 22:30:48] [info] No recent errors; popup skipped.
+[2026-08-08 22:31:06] [info] No recent errors; popup skipped.
+[2026-08-08 22:35:48] [info] No recent errors; popup skipped.
+[2026-08-08 22:36:06] [info] No recent errors; popup skipped.
+--- watchdog.log ---
+[2026-08-08 00:58:15] [info] System integrity OK
+[2026-08-08 01:03:15] [info] Performing integrity check...
+[2026-08-08 01:03:15] [info] System integrity OK
+[2026-08-08 01:08:15] [info] Performing integrity check...
+[2026-08-08 01:08:15] [info] System integrity OK
+--- master_2026-08-07.log ---
+[2026-08-07 23:38:14] [info] Launching MemoryCleaner ...
+[2026-08-07 23:38:14] [info] MemoryCleaner started (PID 11944).
+[2026-08-07 23:38:14] [info] Launching SystemCalibrator ...
+[2026-08-07 23:38:14] [info] SystemCalibrator started (PID 12016).
+[2026-08-07 23:38:14] [info] All components launched. Entering monitoring loop.
+--- master_2026-08-06.log ---
+[2026-08-06 17:29:10] [info] Launching SystemCalibrator ...
+[2026-08-06 17:29:10] [info] SystemCalibrator started (PID 9848).
+[2026-08-06 17:29:10] [info] All components launched. Entering monitoring loop.
+[2026-08-06 17:29:40] [warn] DNSFrenzy process died (Exit Code: 1). Restarting...
+[2026-08-06 17:29:40] [info] DNSFrenzy started (PID 14968).
+--- watchdog_helper.log ---
+[2026-08-05 14:30:32] [info] All checks passed.
+[2026-08-05 14:33:33] [warn] Starting repair process...
+[2026-08-05 14:33:33] [info] Repair process completed.
+[2026-08-05 14:38:12] [info] Running integrity checks...
+[2026-08-05 14:38:12] [info] All checks passed.
+--- master_2026-08-05.log ---
+[2026-08-05 14:26:44] [info] SystemCalibrator started (PID 9604).
+[2026-08-05 14:27:14] [warn] SystemCalibrator process died (Exit Code: -1). Restarting...
+[2026-08-05 14:27:14] [info] SystemCalibrator started (PID 11212).
+[2026-08-05 14:30:44] [warn] SystemCalibrator process died (Exit Code: -1). Restarting...
+[2026-08-05 14:30:44] [info] SystemCalibrator started (PID 5264).
