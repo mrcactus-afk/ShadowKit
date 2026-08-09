@@ -1,6 +1,16 @@
-﻿# ShadowKit runtime artifacts
-state/
+# Goose Installer Files
+Goose/
+Goose-win32-x64.zip
+
+# Logs
 logs/
-archive/
-*.old
-*.bak
+*.log
+
+# State files
+state/
+*.pid
+*.flag
+
+# Temporary files
+*.tmp
+*.new

@@ -5,21 +5,34 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     exit
 }
 
-. "C:\ShadowKit\components\ShadowIPC.ps1"
-. "C:\ShadowKit\components\ShadowLogger.ps1"
+. (Join-Path $PSScriptRoot "components\\ShadowIPC.ps1")
+. (Join-Path $PSScriptRoot "components\\ShadowLogger.ps1")
 
-$scriptDir = "C:\ShadowKit"
+$scriptDir = $PSScriptRoot
 $configPath = Join-Path $scriptDir "config.json"
 $componentsDir = Join-Path $scriptDir "components"
+$stateDir = Join-Path $scriptDir "state"
+
+if (-not (Test-Path $stateDir)) {
+    New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+}
+
+if (-not (Test-Path $configPath)) {
+    Write-ShadowKitLog -Message "Config file not found at $configPath" -Level error -Module Controller
+    exit 1
+}
+
+try {
+    $config = Get-Content $configPath -Raw | ConvertFrom-Json
+} catch {
+    Write-ShadowKitLog -Message "Failed to parse config file: $_" -Level error -Module Controller
+    exit 1
+}
 
 $mutex = New-Object System.Threading.Mutex($false, "ShadowKitController")
 $acquired = $false
 try { $acquired = $mutex.WaitOne(0) } catch [System.Threading.AbandonedMutexException] { $acquired = $true }
 if (-not $acquired) { exit 0 }
-
-$config = Get-Content $configPath -Raw | ConvertFrom-Json
-Write-ShadowKitLog -Message "Controller v4 initializing (Runspace Plugin Loader)..." -Level info -Module Controller
-Set-ShadowStatus -Component "Controller" -Status "Starting"
 
 $plugins = @()
 $manifests = Get-ChildItem -Path $componentsDir -Filter "plugin.json" -Recurse -ErrorAction SilentlyContinue
@@ -61,7 +74,17 @@ foreach ($p in $plugins) {
 Write-ShadowKitLog -Message "Entering monitoring loop." -Level info -Module Controller
 Set-ShadowStatus -Component "Controller" -Status "Running" -Data @{ Plugins = $plugins.Count }
 
+# Add graceful shutdown support
+$stopFile = Join-Path $scriptDir "stop.flag"
+
 while ($true) {
+    # Check for stop signal
+    if (Test-Path $stopFile) {
+        Remove-Item $stopFile -Force
+        Write-ShadowKitLog -Message "Stop signal received. Exiting..." -Level info -Module Controller
+        break
+    }
+    
     Start-Sleep -Seconds 5
     foreach ($p in $plugins) {
         $name = $p.Name
@@ -93,4 +116,3 @@ while ($true) {
         }
     }
 }
-
