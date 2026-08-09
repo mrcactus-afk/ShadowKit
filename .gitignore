@@ -1,12 +1,6 @@
-﻿# Runtime state & artifacts
+﻿# ShadowKit runtime artifacts
 state/
 logs/
-baseline*.json
-restorepoint.json
-best_dns_cache.json
-*.cache.json
-*.tmp
-
-# Windows junk
-Thumbs.db
-desktop.ini
+archive/
+*.old
+*.bak
