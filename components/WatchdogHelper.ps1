@@ -124,7 +124,7 @@ if ($Repair -or $Force) {
     if (-not (Test-PowerPlan)) { Repair-PowerPlan }
     if (-not (Test-ComponentRunning -ScriptName "TimerOptimizer.ps1")) { Repair-Component -ScriptPath "$SK\components\TimerOptimizer.ps1" -Name "TimerOptimizer" }
     if (-not (Test-ComponentRunning -ScriptName "DNSFrenzy.ps1")) { Repair-Component -ScriptPath "$SK\components\DNSFrenzy.ps1" -Name "DNSFrenzy" }
-    if (-not (Test-ComponentRunning -ScriptName "MemoryCleaner.ps1")) { Repair-Component -ScriptPath "$SK\archive\MemoryCleaner.ps1" -Name "MemoryCleaner" }
+    if (-not (Test-ComponentRunning -ScriptName "MemoryCleaner.ps1")) { Repair-Component -ScriptPath "$SK\components\MemoryCleaner.ps1" -Name "MemoryCleaner" }
     if (-not (Test-MinecraftSettings)) { Repair-MinecraftSettings }
     if (-not (Test-JvmG1GC)) { Repair-JvmG1GC }
     if (-not (Test-GpuPerformance)) { Repair-GpuPerformance }
@@ -135,5 +135,6 @@ if ($Repair -or $Force) {
 }
 
 exit 0
+
 
 

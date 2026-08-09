@@ -1,9 +1,4 @@
-﻿BeforeAll {
-    . "$PSScriptRoot\..\components\ShadowIPC.ps1"
-    $script:ShadowStatusFile = "TestDrive:\status.json"
-}
-
-Describe "SystemCalibrator Logic" {
+﻿Describe "SystemCalibrator Logic" {
     It "Test-Condition respects minRamGB" {
         $facts = @{ ramGB = 8; cores = 4; battery = $false }
         $cond = @{ minRamGB = 16 }

@@ -64,6 +64,14 @@ Set-ShadowStatus -Component "Controller" -Status "Running" -Data @{ Plugins = $p
 while ($true) {
     Start-Sleep -Seconds 5
     foreach ($p in $plugins) {
+        $name = $p.Name
+        if ($runspaces[$name] -and $runspaces[$name].Async -and -not $runspaces[$name].Async.IsCompleted) {
+            if ($restartCounts[$name] -gt 0 -and $nextRestart[$name] -eq [datetime]::MinValue) {
+                $restartCounts[$name] = 0
+            }
+        }
+    }
+    foreach ($p in $plugins) {
         $name = $p.Name; $state = $runspaces[$name]
         if (-not $state) { continue }
         if ($state.Async.IsCompleted) {
@@ -85,3 +93,4 @@ while ($true) {
         }
     }
 }
+

@@ -1,5 +1,6 @@
 ﻿Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
-. "C:\\ShadowKit\\components\\ShadowIPC.ps1"`n. "C:\\ShadowKit\\components\\ShadowAlert.ps1"
+. "C:\ShadowKit\components\ShadowIPC.ps1"
+. "C:\ShadowKit\components\ShadowAlert.ps1"
 
 # DPI Awareness (Windows 10/11)
 if ([Environment]::OSVersion.Version.Major -ge 10) {
@@ -34,7 +35,8 @@ if ([Environment]::OSVersion.Version.Major -ge 10) {
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="150"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>`n        </Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="SHADOWKIT v4 CONTROL CENTER" FontSize="22" FontWeight="Bold" Foreground="#007ACC" Margin="0,0,0,15"/>
 
@@ -57,7 +59,9 @@ if ([Environment]::OSVersion.Version.Major -ge 10) {
                      Text="Waiting for component telemetry..."/>
         </Border>
 
-        <Border Grid.Row="4" Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="4" Margin="0,0,0,10"><ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="120"><StackPanel x:Name="AlertPanel" Margin="10"><TextBlock Text="No alerts" Foreground="#808080" FontSize="12" FontFamily="Consolas"/></StackPanel></ScrollViewer></Border><StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+        <Border Grid.Row="4" Background="#2D2D30" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="4" Margin="0,0,0,10"><ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="120"><StackPanel x:Name="AlertPanel" Margin="10"><TextBlock Text="No alerts" Foreground="#808080" FontSize="12" FontFamily="Consolas"/></StackPanel></ScrollViewer></Border>
+        
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="OpenConfigBtn" Content="Open Config"/>
             <Button x:Name="ViewLogsBtn" Content="View Logs"/>
             <Button x:Name="RestartBtn" Content="Restart Controller"/>
@@ -76,7 +80,7 @@ $chartCanvas = $window.FindName("ChartCanvas")
 $statusBoard = $window.FindName("StatusBoard")
 $openConfigBtn = $window.FindName("OpenConfigBtn")
 $viewLogsBtn = $window.FindName("ViewLogsBtn")
-$restartBtn = $window.FindName("RestartBtn")
+$alertPanel = $window.FindName("AlertPanel")
 
 # Zero-lag Performance Counters
 $script:cpuCounter = New-Object System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total")
@@ -181,4 +185,6 @@ $restartBtn.Add_Click({
 
 $timer.Start()
 $window.ShowDialog() | Out-Null
+
+
 

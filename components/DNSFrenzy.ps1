@@ -73,6 +73,9 @@ $lastTest = (Get-Date).AddMinutes(-$interval)
 $eventFlagFile = "C:\ShadowKit\network_changed.flag"
 
 # Register CIM event subscription for network adapter status changes
+# Unregister any existing event subscription to prevent leaks on restart
+Get-EventSubscriber -SourceIdentifier "ShadowKitNetworkWatcher" -ErrorAction SilentlyContinue | Unregister-Event -ErrorAction SilentlyContinue
+
 try {
     Register-WmiEvent -Query "SELECT * FROM __InstanceModificationEvent WITHIN 5 WHERE TargetInstance ISA 'Win32_NetworkAdapter' AND TargetInstance.NetConnectionStatus != PreviousInstance.NetConnectionStatus" -Action {
         New-Item -ItemType File -Path "C:\ShadowKit\network_changed.flag" -Force | Out-Null
@@ -171,6 +174,7 @@ while($true){
     }
     Start-Sleep -Seconds 60
 }
+
 
 
 

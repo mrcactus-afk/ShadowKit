@@ -34,8 +34,8 @@ Add-Check "ScheduledTask" ($task.State -eq "Running") ("state: " + $task.State)
 $cfg = Get-Content (Join-Path $Root "config.json") -Raw | ConvertFrom-Json
 Add-Check "Config" ($cfg.watchdog.enabled -and $cfg.dns.enabled -and $cfg.timer.enabled -and $cfg.memory.enabled) "all modules enabled"
 
-$master = Get-ChildItem (Join-Path $LogDir "master_*.log") | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-Add-Check "MasterLog" ((Test-LogTail $master.FullName "Entering monitoring loop") -and -not (Test-LogTail $master.FullName "process died|process missing|Failed to start")) "tail clean"
+$master = Get-ChildItem (Join-Path $LogDir "shadowkit.jsonl") | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+Add-Check "MasterLog" ((Test-LogTail (Join-Path $LogDir "shadowkit.jsonl") "Controller.*Running") -and (Test-LogTail (Join-Path $LogDir "shadowkit.jsonl") "crashed|Failed") -eq $false) "tail clean"
 
 Add-Check "WatchdogLog" ((Test-LogFresh (Join-Path $LogDir "watchdog.log") 10) -and (Test-LogTail (Join-Path $LogDir "watchdog.log") "System integrity OK")) "check cycle active"
 
@@ -78,3 +78,4 @@ Add-Check "FreshErrors" ($freshErrors.Count -eq 0) ("count in last 60 min: " + $
 $results
 ""
 if ($script:failCount -eq 0) { "OVERALL: ALL CHECKS PASSED" } else { "OVERALL: " + $script:failCount + " CHECK(S) FAILED" }
+

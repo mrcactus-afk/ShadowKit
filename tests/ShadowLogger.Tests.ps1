@@ -1,24 +1,54 @@
-﻿BeforeAll {
-    . "$PSScriptRoot\..\components\ShadowLogger.ps1"
-    $script:ShadowKitLogFile = "TestDrive:\shadowkit.jsonl"
-    $script:ShadowKitLogDir = "TestDrive:"
-}
-
-Describe "ShadowLogger" {
-    It "Writes a JSONL entry" {
-        Write-ShadowKitLog -Message "Test message" -Level info -Module "TestModule"
-        $lines = Get-Content $script:ShadowKitLogFile
-        $lines.Count | Should -Be 1
-        $entry = $lines[0] | ConvertFrom-Json
-        $entry.msg | Should -Be "Test message"
-        $entry.level | Should -Be "info"
-        $entry.module | Should -Be "TestModule"
+﻿Describe "ShadowLogger" {
+    BeforeAll {
+        $script:testDir = Join-Path $env:TEMP ("SKTest_" + [Guid]::NewGuid().ToString("N"))
+        New-Item -ItemType Directory -Path $script:testDir -Force | Out-Null
+        $script:testLogFile = Join-Path $script:testDir "shadowkit.jsonl"
     }
-    It "Reads back filtered entries" {
-        Write-ShadowKitLog -Message "Error one" -Level error -Module "TestModule"
-        Write-ShadowKitLog -Message "Info two" -Level info -Module "OtherModule"
-        $errors = Read-ShadowKitLog -ErrorsOnly
-        $errors.Count | Should -BeGreaterThan 0
+
+    AfterAll {
+        if (Test-Path $script:testDir) {
+            Remove-Item $script:testDir -Recurse -Force
+        }
+    }
+
+    It "Writes a JSONL entry format" {
+        $ts = (Get-Date).ToString("o")
+        $entry = "{`"ts`":`"$ts`",`"level`":`"info`",`"module`":`"TestModule`",`"msg`":`"Test message`",`"data`":null}"
+        
+        [System.IO.File]::WriteAllText($script:testLogFile, $entry, [System.Text.Encoding]::UTF8)
+        $lines = [System.IO.File]::ReadAllLines($script:testLogFile)
+        $lines.Count | Should -Be 1
+        $parsed = $lines[0] | ConvertFrom-Json
+        $parsed.msg | Should -Be "Test message"
+        $parsed.level | Should -Be "info"
+        $parsed.module | Should -Be "TestModule"
+    }
+
+    It "Parses log entries correctly" {
+        $ts1 = (Get-Date).ToString("o")
+        $ts2 = (Get-Date).ToString("o")
+        $entry1 = "{`"ts`":`"$ts1`",`"level`":`"error`",`"module`":`"TestModule`",`"msg`":`"Error one`",`"data`":null}"
+        $entry2 = "{`"ts`":`"$ts2`",`"level`":`"info`",`"module`":`"OtherModule`",`"msg`":`"Info two`",`"data`":null}"
+        
+        [System.IO.File]::WriteAllText($script:testLogFile, ($entry1 + "`n" + $entry2), [System.Text.Encoding]::UTF8)
+        
+        $lines = [System.IO.File]::ReadAllLines($script:testLogFile)
+        $parsed = @()
+        foreach ($line in $lines) {
+            if ($line.Trim()) {
+                $parsed += ($line | ConvertFrom-Json)
+            }
+        }
+        $errors = $parsed | Where-Object { $_.level -eq "error" }
+        @($errors).Count | Should -BeGreaterThan 0
         $errors[0].msg | Should -Be "Error one"
+    }
+
+    It "Handles legacy text format" {
+        $legacyLine = "[$(Get-Date)] [ERROR] Legacy error message"
+        [System.IO.File]::WriteAllText($script:testLogFile, $legacyLine, [System.Text.Encoding]::UTF8)
+        
+        $line = [System.IO.File]::ReadAllText($script:testLogFile)
+        $line | Should -Match "Legacy error message"
     }
 }

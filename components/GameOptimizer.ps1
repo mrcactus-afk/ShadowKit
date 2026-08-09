@@ -67,10 +67,10 @@ try {
     $newGuid = Get-Guid (powercfg -duplicatescheme $ULT_GUID 2>$null)
     if ($newGuid) { powercfg -setactive $newGuid | Out-Null; Log "Ultimate Performance plan activated ($newGuid)" }
     else { Log "Ultimate plan duplicate failed, tuning active scheme instead" "warn" }
-    powercfg -setacvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60fe74077 893dee8e-2d51-4f0e-a269-5807a749e56f 100
-    powercfg -setdcvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60fe74077 893dee8e-2d51-4f0e-a269-5807a749e56f 100
-    powercfg -setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0
-    powercfg -setacvalueindex SCHEME_CURRENT 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0
+    try { powercfg -setacvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60fe74077 893dee8e-2d51-4f0e-a269-5807a749e56f 100 2>$null } catch { Log "powercfg AC skipped (non-critical)" "warn" }
+    try { powercfg -setdcvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60fe74077 893dee8e-2d51-4f0e-a269-5807a749e56f 100 2>$null } catch { Log "powercfg DC skipped (non-critical)" "warn" }
+    try { powercfg -setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 2>$null } catch { Log "powercfg AC skipped (non-critical)" "warn" }
+    try { powercfg -setacvalueindex SCHEME_CURRENT 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0 2>$null } catch { Log "powercfg AC skipped (non-critical)" "warn" }
     powercfg -setactive SCHEME_CURRENT | Out-Null
     Log "Power sub-settings forced: CPU min 100%, USB suspend off, PCIe ASPM off"
 } catch { Log "Power plan tuning failed: $($_.Exception.Message)" "warn" }
@@ -114,3 +114,6 @@ Set-ShadowStatus -Component "GameOptimizer" -Status "Applied" -Data @{ RebootReq
 Log "GameOptimizer APPLY complete. Reboot once for HAGS + memory compression to fully latch."
 "=== GameOptimizer applied. State saved to $stateFile. REBOOT once. ==="
 "=== To undo everything: .\components\GameOptimizer.ps1 -Revert ==="
+
+
+

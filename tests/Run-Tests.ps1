@@ -1,8 +1,4 @@
 ﻿$ErrorActionPreference = "Stop"
-if (-not (Get-Module Pester -ListAvailable)) {
-    Write-Host "Pester not found. Installing..." -ForegroundColor Yellow
-    Install-Module Pester -Force -SkipPublisherCheck -Scope CurrentUser
-}
 Import-Module Pester
 $results = Invoke-Pester -Path "$PSScriptRoot" -Output Detailed -PassThru
 if ($results.FailedCount -gt 0) {
