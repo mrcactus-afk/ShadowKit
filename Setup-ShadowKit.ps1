@@ -48,3 +48,16 @@ Write-Host "Starting the task..." -ForegroundColor Yellow
 Start-Process powershell.exe -ArgumentList "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$targetDir\ShadowController.ps1`""
 
 Write-Host "Installation complete. CAT Core Automation is now running and will start automatically on every boot." -ForegroundColor Green
+
+# --- Launcher Creation (v4.2.2) ---
+Write-Host "
+Creating launcher..." -ForegroundColor Cyan
+$WshShell = New-Object -ComObject WScript.Shell
+$desktopPath = [Environment]::GetFolderPath("Desktop")
+$shortcut = $WshShell.CreateShortcut("$desktopPath\ShadowKit.lnk")
+$shortcut.TargetPath = "$SK\Launch-ShadowKit.bat"
+$shortcut.WorkingDirectory = $SK
+$shortcut.IconLocation = "powershell.exe,0"
+$shortcut.Description = "ShadowKit"
+$shortcut.Save()
+Write-Host "Desktop shortcut created." -ForegroundColor Green
