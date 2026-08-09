@@ -1,7 +1,7 @@
 ﻿{
     "Name":  "TimerOptimizer",
     "Version":  "1.0.0",
-    "EntryPoint":  "..\\TimerOptimizer.ps1",
+    "EntryPoint":  "C:\\ShadowKit\\components\\TimerOptimizer.ps1",
     "Enabled":  true,
     "ConfigKey":  "timer"
 }

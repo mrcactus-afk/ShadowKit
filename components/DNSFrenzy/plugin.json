@@ -1,7 +1,7 @@
 ﻿{
     "Name":  "DNSFrenzy",
     "Version":  "1.0.0",
-    "EntryPoint":  "..\\DNSFrenzy.ps1",
+    "EntryPoint":  "C:\\ShadowKit\\components\\DNSFrenzy.ps1",
     "Enabled":  true,
     "ConfigKey":  "dns"
 }

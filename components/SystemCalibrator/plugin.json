@@ -1,7 +1,7 @@
 ﻿{
     "Name":  "SystemCalibrator",
     "Version":  "1.0.0",
-    "EntryPoint":  "..\\SystemCalibrator.ps1",
+    "EntryPoint":  "C:\\ShadowKit\\components\\SystemCalibrator.ps1",
     "Enabled":  true,
     "ConfigKey":  "calibrator"
 }

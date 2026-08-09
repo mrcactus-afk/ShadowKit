@@ -1,5 +1,5 @@
 ﻿{
-    "EntryPoint":  "..\\MemoryCleaner.ps1",
+    "EntryPoint":  "C:\\ShadowKit\\components\\MemoryCleaner.ps1",
     "Name":  "MemoryCleaner",
     "Version":  "1.0.0",
     "ConfigKey":  "memory",
