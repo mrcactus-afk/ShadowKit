@@ -14,3 +14,6 @@ while ($true) {
     Set-ShadowStatus -Component "TimerOptimizer" -Status "Running" -Data @{ resolutionNs = $cur }
     Start-Sleep -Seconds 30
 }
+
+# Keep alive for controller
+while ($true) { Start-Sleep -Seconds 3600 }
