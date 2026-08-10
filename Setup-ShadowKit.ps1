@@ -1,15 +1,13 @@
 ﻿<#
 .SYNOPSIS
-    Installs ShadowKit – copies files, creates scheduled task, starts it.
+    Installs ShadowKit v7.0 – copies files, registers scheduled task, creates shortcut.
 .DESCRIPTION
     Run this script as Administrator. It will:
       1. Create C:\ShadowKit if it doesn't exist.
       2. Copy all files from the current folder into C:\ShadowKit.
-      3. Clean Export-ModuleMember from ShadowLogger.ps1 and ShadowIPC.ps1 (if present).
-      4. Create logs and state directories.
-      5. Register a scheduled task 'ShadowKitController' that launches ShadowController.ps1 at startup.
-      6. Start the task immediately.
-      7. Create a desktop shortcut.
+      3. Register a scheduled task 'ShadowKitController' that launches ShadowController.ps1 at startup.
+      4. **Does NOT start the controller immediately** – relies on the task to start at next boot.
+      5. Create a desktop shortcut.
 #>
 
 # Ensure admin
@@ -18,7 +16,7 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
     exit 1
 }
 
-Write-Host "ShadowKit Installer v6.9" -ForegroundColor Cyan
+Write-Host "ShadowKit Installer v7.0" -ForegroundColor Cyan
 Write-Host "========================" -ForegroundColor Yellow
 
 $targetDir = "C:\ShadowKit"
@@ -30,29 +28,13 @@ if (-not (Test-Path $targetDir)) {
 Write-Host "Copying all files to $targetDir ..." -ForegroundColor Yellow
 Copy-Item -Path ".\*" -Destination $targetDir -Recurse -Force
 
-# Clean Export-ModuleMember from ShadowLogger.ps1 and ShadowIPC.ps1
-$filesToClean = @(
-    "$targetDir\components\ShadowLogger.ps1",
-    "$targetDir\components\ShadowIPC.ps1"
-)
-foreach ($f in $filesToClean) {
-    if (Test-Path $f) {
-        $content = Get-Content $f -Raw
-        if ($content -match 'export-modulemember') {
-            $newContent = $content -replace '(?im)^\s*export-modulemember\s+.*$', ''
-            $newContent | Out-File $f -Encoding UTF8 -Force
-            Write-Host "Cleaned $f" -ForegroundColor Green
-        }
-    }
-}
-
 # Ensure logs and state directories
 $logDir = "$targetDir\logs"
 $stateDir = "$targetDir\state"
 New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
 
-# Register scheduled task
+# Register scheduled task (runs as SYSTEM, hidden)
 $taskName = "ShadowKitController"
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$targetDir\ShadowController.ps1`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
@@ -61,8 +43,8 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 Write-Host "Registering scheduled task '$taskName'..." -ForegroundColor Yellow
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -User "SYSTEM" -RunLevel Highest | Out-Null
 
-Write-Host "Starting the task..." -ForegroundColor Yellow
-Start-Process powershell.exe -ArgumentList "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$targetDir\ShadowController.ps1`""
+# Do NOT start the controller; it will run at next boot
+Write-Host "Task registered. The controller will start automatically at the next boot." -ForegroundColor Green
 
 # Desktop shortcut
 $WshShell = New-Object -ComObject WScript.Shell
@@ -74,4 +56,4 @@ $shortcut.IconLocation = "powershell.exe,0"
 $shortcut.Description = "ShadowKit"
 $shortcut.Save()
 
-Write-Host "Installation complete. ShadowKit is running and will start on every boot." -ForegroundColor Green
+Write-Host "Installation complete. ShadowKit will start on next boot." -ForegroundColor Green
