@@ -1,23 +1,20 @@
-﻿<#
-.SYNOPSIS
-    Installs ShadowKit v7.0 – copies files, registers scheduled task, creates shortcut.
-.DESCRIPTION
-    Run this script as Administrator. It will:
-      1. Create C:\ShadowKit if it doesn't exist.
-      2. Copy all files from the current folder into C:\ShadowKit.
-      3. Register a scheduled task 'ShadowKitController' that launches ShadowController.ps1 at startup.
-      4. **Does NOT start the controller immediately** – relies on the task to start at next boot.
-      5. Create a desktop shortcut.
-#>
+﻿# =====================================================================
+# Setup-ShadowKit.ps1 – Self‑elevating installer v7.2
+# If not running as Administrator, it re‑launches itself with RunAs.
+# =====================================================================
 
-# Ensure admin
-if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole('Administrator')) {
-    Write-Host "This script must be run as Administrator." -ForegroundColor Red
-    exit 1
+# ---- Self‑elevation block ----
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "This script requires Administrator privileges. Re‑launching..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 1
+    $scriptPath = $MyInvocation.MyCommand.Path
+    Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" -Wait
+    exit
 }
 
-Write-Host "ShadowKit Installer v7.0" -ForegroundColor Cyan
-Write-Host "========================" -ForegroundColor Yellow
+# ---- Installation ----
+Write-Host "ShadowKit Installer v7.2 (elevated)" -ForegroundColor Cyan
+Write-Host "==================================" -ForegroundColor Yellow
 
 $targetDir = "C:\ShadowKit"
 if (-not (Test-Path $targetDir)) {
@@ -26,7 +23,7 @@ if (-not (Test-Path $targetDir)) {
 }
 
 Write-Host "Copying all files to $targetDir ..." -ForegroundColor Yellow
-Copy-Item -Path ".\*" -Destination $targetDir -Recurse -Force
+Copy-Item -Path (Join-Path $PSScriptRoot '*') -Destination $targetDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # Ensure logs and state directories
 $logDir = "$targetDir\logs"
@@ -34,7 +31,11 @@ $stateDir = "$targetDir\state"
 New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
 
-# Register scheduled task (runs as SYSTEM, hidden)
+# Clean up leftover component logs (optional)
+Get-ChildItem $logDir -Filter "*_controller.log" -ErrorAction SilentlyContinue | Remove-Item -Force
+Get-ChildItem $logDir -Filter "*_controller.err" -ErrorAction SilentlyContinue | Remove-Item -Force
+
+# Register scheduled task
 $taskName = "ShadowKitController"
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$targetDir\ShadowController.ps1`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
@@ -43,8 +44,9 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 Write-Host "Registering scheduled task '$taskName'..." -ForegroundColor Yellow
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -User "SYSTEM" -RunLevel Highest | Out-Null
 
-# Do NOT start the controller; it will run at next boot
-Write-Host "Task registered. The controller will start automatically at the next boot." -ForegroundColor Green
+# Start the task immediately (so it runs now)
+Write-Host "Starting controller..." -ForegroundColor Yellow
+Start-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 
 # Desktop shortcut
 $WshShell = New-Object -ComObject WScript.Shell
@@ -56,4 +58,4 @@ $shortcut.IconLocation = "powershell.exe,0"
 $shortcut.Description = "ShadowKit"
 $shortcut.Save()
 
-Write-Host "Installation complete. ShadowKit will start on next boot." -ForegroundColor Green
+Write-Host "Installation complete. ShadowKit is running and will start at every boot." -ForegroundColor Green
