@@ -1,6 +1,0 @@
-﻿2026-08-09 19:48:07 [INFO] === Master Log Rotated ===`n
-{"ts":"2026-08-09T19:48:32.7002358+03:30","level":"info","module":"MemoryCleaner","msg":"Standby: 960.8 MB – below threshold, skipping."}
-{"ts":"2026-08-09T19:49:46.4856074+03:30","level":"info","module":"MemoryCleaner","msg":"Standby: 960.9 MB – below threshold, skipping."}
-{"ts":"2026-08-09T19:53:33.7129745+03:30","level":"info","module":"MemoryCleaner","msg":"Standby: 961.1 MB – below threshold, skipping."}
-{"ts":"2026-08-09T19:54:47.4963488+03:30","level":"info","module":"MemoryCleaner","msg":"Standby: 960.7 MB – below threshold, skipping."}
-{"ts":"2026-08-09T19:58:34.7191591+03:30","level":"info","module":"MemoryCleaner","msg":"Standby: 959.5 MB – below threshold, skipping."}

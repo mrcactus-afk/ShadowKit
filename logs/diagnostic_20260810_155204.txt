@@ -1,0 +1,62 @@
+﻿ShadowKit Diagnostic 2026-08-10T15:52:04.2173425+03:30
+
+=== Scheduled Task ===
+State: Running
+
+=== Processes ===
+"powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\ShadowKit\ShadowController.ps1"
+"C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\ShadowKit\components\DNSFrenzy.ps1" -Silent 
+"C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\ShadowKit\components\GameOptimizer\GameOptimizer-Wrapper.ps1" -Silent 
+"C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\ShadowKit\components\MemoryCleaner.ps1" -Silent 
+"C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\ShadowKit\components\SystemCalibrator.ps1" -Silent 
+"C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\ShadowKit\components\TimerOptimizer.ps1" -Silent 
+powershell  -NoProfile -ExecutionPolicy Bypass -File "C:\ShadowKit\Launch-ShadowKit.ps1"
+
+=== Log Tails ===
+--- memory.log ---
+[2026-08-10 15:33:20] [info] Standby: 1064.2 MB – purging...
+[2026-08-10 15:33:20] [info] Purge succeeded using NtSetSystemInformation (attempt 1).
+[2026-08-10 15:38:21] [info] Standby: 136.5 MB – below threshold, skipping.
+[2026-08-10 15:43:22] [info] Standby: 199.3 MB – below threshold, skipping.
+[2026-08-10 15:48:23] [info] Standby: 205.6 MB – below threshold, skipping.
+--- GameOptimizer.log ---
+=== GameOptimizer applied. State saved to C:\ShadowKit\state\gameoptimizer.state.json. REBOOT once. ===
+=== To undo everything: .\components\GameOptimizer.ps1 -Revert ===
+--- calibrator.log ---
+[2026-08-10 15:20:28] [info] Applied power active -> 381b4222-f694-41f0-9685-ff5bb260df2e (was 9d06580a-fd80-4349-87ca-45a0f0346cfa)
+[2026-08-10 15:20:28] [warn] Drift pass: 1 entries re-applied.
+[2026-08-10 15:23:17] [info] SystemCalibrator started (interval 30 min). Active entries: 10
+[2026-08-10 15:23:17] [info] Applied power active -> 381b4222-f694-41f0-9685-ff5bb260df2e (was 2cac233b-dba6-45a1-9014-f3400bcc70b3)
+[2026-08-10 15:23:17] [warn] Drift pass: 1 entries re-applied.
+--- shadowkit.log ---
+2026-08-10T15:23:16.2754446+03:30 [info] MemoryCleaner launched with PID 8244
+2026-08-10T15:23:16.2853905+03:30 [info] Launching SystemCalibrator from C:\ShadowKit\components\SystemCalibrator.ps1
+2026-08-10T15:23:16.2903732+03:30 [info] SystemCalibrator launched with PID 4924
+2026-08-10T15:23:16.2903732+03:30 [info] Launching TimerOptimizer from C:\ShadowKit\components\TimerOptimizer.ps1
+2026-08-10T15:23:16.2995494+03:30 [info] TimerOptimizer launched with PID 8828
+--- TimerOptimizer.log ---
+--- SystemCalibrator.log ---
+--- MemoryCleaner.log ---
+--- DNSFrenzy.log ---
+--- TimerOptimizer_controller.log ---
+--- SystemCalibrator_controller.log ---
+--- MemoryCleaner_controller.log ---
+--- GameOptimizer_controller.log ---
+--- DNSFrenzy_controller.log ---
+--- game_manual.log ---
+--- calibrator_manual.log ---
+--- memory_manual.log ---
+--- timer_manual.log ---
+--- dns_manual.log ---
+--- watchdog.log ---
+[2026-08-09 23:15:42] [info] System integrity OK
+[2026-08-09 23:20:42] [info] Performing integrity check...
+[2026-08-09 23:20:42] [info] System integrity OK
+[2026-08-09 23:25:42] [info] Performing integrity check...
+[2026-08-09 23:25:42] [info] System integrity OK
+--- controller_elevation_error.log ---
+08/09/2026 23:08:34 - ERROR: Controller must be run as Administrator. Exiting.
+08/09/2026 23:08:34 - ERROR: Controller must be run as Administrator. Exiting.
+08/09/2026 23:08:35 - ERROR: Controller must be run as Administrator. Exiting.
+08/09/2026 23:09:25 - ERROR: Controller must be run as Administrator. Exiting.
+08/09/2026 23:10:29 - ERROR: Controller must be run as Administrator. Exiting.

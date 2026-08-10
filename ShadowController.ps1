@@ -1,47 +1,54 @@
-﻿# ShadowKit Controller v7.0
-# - Uses named mutex for singleton (no stale file locks)
-# - RunspacePool for in-process component isolation
-# - Per-component telemetry: execution time and memory delta
-# - No Export-ModuleMember hacks (uses proper module)
-param([switch]$Silent)
+﻿param([switch]$Silent)
 
-# Import proper module (ShadowLogger.psm1)
-$modulePath = Join-Path $PSScriptRoot 'components\ShadowLogger.psm1'
-if (Test-Path $modulePath) {
-    Import-Module $modulePath -Force -ErrorAction Stop
-} else {
-    # Fallback stub if module not found
-    function Write-ShadowKitLog { param($Message,$Level='info',$Module='System',$Data=@{}) }
-    function Read-ShadowKitLog { param($Tail=200) return @() }
+$scriptDir = $PSScriptRoot
+if (-not $scriptDir) { $scriptDir = 'C:\ShadowKit' }
+Set-Location $scriptDir
+
+# Load IPC and Logger (fallback if missing)
+. (Join-Path $scriptDir 'components\ShadowIPC.ps1') -ErrorAction SilentlyContinue
+. (Join-Path $scriptDir 'components\ShadowLogger.ps1') -ErrorAction SilentlyContinue
+
+# Fallback logger if missing
+if (-not (Get-Command Write-ShadowKitLog -ErrorAction SilentlyContinue)) {
+    function Write-ShadowKitLog {
+        param($Message, $Level='info', $Module='Controller', $Data=@{})
+        $logDir = Join-Path $scriptDir 'logs'
+        if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+        $logFile = Join-Path $logDir 'shadowkit.log'
+        "$(Get-Date -Format 'o') [$Level] [$Module] $Message" | Out-File -Append $logFile -Encoding UTF8
+    }
 }
 
-# Mutex for singleton (Global\ShadowKitControllerMutex)
-$mutexName = 'Global\ShadowKitControllerMutex'
-$mutex = New-Object System.Threading.Mutex($false, $mutexName)
-if (-not $mutex.WaitOne(0)) {
-    Write-ShadowKitLog -Message "Another controller is running. Exiting." -Level info -Module Controller
-    exit 0
+# Singleton lock file
+$lockFile = Join-Path $scriptDir 'controller.lock'
+if (Test-Path $lockFile) {
+    $age = (Get-Date) - (Get-Item $lockFile).LastWriteTime
+    if ($age.TotalSeconds -lt 5) {
+        Write-ShadowKitLog "Another controller is running (lock fresh)" -Level info
+        exit 0
+    } else {
+        Remove-Item $lockFile -Force
+        Write-ShadowKitLog "Stale lock removed" -Level info
+    }
 }
-# Ensure mutex is released on exit
-Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
-    try { $mutex.ReleaseMutex() } catch {}
-    $mutex.Dispose()
+New-Item -ItemType File -Path $lockFile -Force | Out-Null
+$null = Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
+    Remove-Item $lockFile -Force -ErrorAction SilentlyContinue
 }
 
-Write-ShadowKitLog -Message "Controller started (v7.0)" -Level info -Module Controller
+Write-ShadowKitLog "Controller started (simple process‑based)" -Level info
 
 # Read config
-$configPath = Join-Path $PSScriptRoot 'config.json'
+$configPath = Join-Path $scriptDir 'config.json'
 if (-not (Test-Path $configPath)) {
-    Write-ShadowKitLog -Message "Config missing at $configPath" -Level error -Module Controller
-    $mutex.ReleaseMutex()
+    Write-ShadowKitLog "Config missing at $configPath" -Level error
     exit 1
 }
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
 
 # Discover plugins
 $plugins = @()
-Get-ChildItem -Path (Join-Path $PSScriptRoot 'components') -Filter 'plugin.json' -Recurse | ForEach-Object {
+Get-ChildItem -Path (Join-Path $scriptDir 'components') -Filter 'plugin.json' -Recurse | ForEach-Object {
     $man = $_ | Get-Content -Raw | ConvertFrom-Json -ErrorAction SilentlyContinue
     if (-not $man) { return }
     $scriptPath = $man.EntryPoint
@@ -61,106 +68,51 @@ Get-ChildItem -Path (Join-Path $PSScriptRoot 'components') -Filter 'plugin.json'
         }
     }
 }
-Write-ShadowKitLog -Message "Discovered $($plugins.Count) plugins" -Level info -Module Controller
+Write-ShadowKitLog "Discovered $($plugins.Count) plugins" -Level info
 
-# Create runspace pool (min=2, max=ProcessorCount+2)
-$cpu = [Environment]::ProcessorCount
-$min = [math]::Min(2, $cpu)
-$max = $cpu + 2
-$pool = [runspacefactory]::CreateRunspacePool($min, $max)
-$pool.ApartmentState = 'MTA'
-$pool.Open()
-Write-ShadowKitLog -Message "Runspace pool created (min=$min, max=$max)" -Level info -Module Controller
-
-# Helper to run a plugin and collect telemetry
-function Invoke-Plugin {
-    param($Plugin, $Pool)
-    $powershell = [powershell]::Create()
-    $powershell.RunspacePool = $Pool
-    # Capture start time and memory
-    $startTime = Get-Date
-    $startMem = (Get-Process -Id $PID).WorkingSet64 / 1MB
-    # Add the script to run
-    $null = $powershell.AddScript({
-        param($scriptPath)
-        & $scriptPath -Silent
-    }).AddArgument($Plugin.ScriptPath)
-    # Begin invoke
-    $async = $powershell.BeginInvoke()
-    # Wait for completion (with timeout: 1 hour max)
-    $completed = $async.AsyncWaitHandle.WaitOne(3600000)
-    if (-not $completed) {
-        $powershell.Stop()
-        Write-ShadowKitLog -Message "$($Plugin.Name) timed out after 1 hour" -Level warn -Module Controller
-        $powershell.Dispose()
-        return $null
-    }
-    # Collect result
-    try {
-        $result = $powershell.EndInvoke($async)
-    } catch {
-        $result = $null
-        Write-ShadowKitLog -Message "$($Plugin.Name) threw exception: $_" -Level error -Module Controller
-    }
-    $endTime = Get-Date
-    $endMem = (Get-Process -Id $PID).WorkingSet64 / 1MB
-    $duration = ($endTime - $startTime).TotalSeconds
-    $memDelta = $endMem - $startMem
-    $powershell.Dispose()
-    # Log telemetry
-    Write-ShadowKitLog -Message "$($Plugin.Name) completed in ${duration}s, memory delta: $([math]::Round($memDelta,2)) MB" -Level info -Module Controller -Data @{
-        Plugin = $Plugin.Name
-        DurationSec = [math]::Round($duration,2)
-        MemoryDeltaMB = [math]::Round($memDelta,2)
-        Result = $result
-    }
-    return $result
-}
-
-# Launch each plugin as a job in the pool
-$jobs = @{}
+# Launch each plugin as a separate process and store handles
+$processes = @{}
 foreach ($p in $plugins) {
-    Write-ShadowKitLog -Message "Launching $($p.Name)" -Level info -Module Controller
+    Write-ShadowKitLog "Launching $($p.Name) from $($p.ScriptPath)" -Level info
     try {
-        $job = [PSCustomObject]@{
-            Name = $p.Name
-            Async = Invoke-Plugin -Plugin $p -Pool $pool
-        }
-        $jobs[$p.Name] = $job
+        $proc = Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$($p.ScriptPath)`" -Silent" -WindowStyle Hidden -PassThru
+        $processes[$p.Name] = $proc
+        Write-ShadowKitLog "$($p.Name) launched with PID $($proc.Id)" -Level info
+        Set-ShadowStatus -Component $p.Name -Status 'Running' -Data @{ ScriptPath = $p.ScriptPath }
     } catch {
-        Write-ShadowKitLog -Message "Failed to launch $($p.Name): $_" -Level error -Module Controller
+        Write-ShadowKitLog "Failed to launch $($p.Name): $_" -Level error
+        Set-ShadowStatus -Component $p.Name -Status 'Crashed'
     }
 }
+Set-ShadowStatus -Component 'Controller' -Status 'Running' -Data @{ Plugins = $plugins.Count }
 
-# Monitor loop – check for completed jobs and restart if needed
-$stopFile = Join-Path $PSScriptRoot 'stop.flag'
+# Monitor loop
+$stopFile = Join-Path $scriptDir 'stop.flag'
 while ($true) {
     if (Test-Path $stopFile) {
         Remove-Item $stopFile -Force
-        Write-ShadowKitLog -Message "Stop signal received. Exiting..." -Level info -Module Controller
+        Write-ShadowKitLog "Stop signal received. Exiting..." -Level info
         break
     }
-    Start-Sleep -Seconds 5
+    Start-Sleep -Seconds 10
+
     foreach ($p in $plugins) {
         $name = $p.Name
-        $job = $jobs[$name]
-        if ($job -and $job.Async -eq $null) {
-            # Job completed or failed – restart
-            Write-ShadowKitLog -Message "$name has stopped. Restarting..." -Level warn -Module Controller
+        $proc = $processes[$name]
+        if (-not $proc -or $proc.HasExited) {
+            Write-ShadowKitLog "$name has exited. Restarting..." -Level warn
             try {
-                $newJob = Invoke-Plugin -Plugin $p -Pool $pool
-                $jobs[$name] = [PSCustomObject]@{ Name = $name; Async = $newJob }
-                Write-ShadowKitLog -Message "$name restarted." -Level info -Module Controller
+                $newProc = Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$($p.ScriptPath)`" -Silent" -WindowStyle Hidden -PassThru
+                $processes[$name] = $newProc
+                Write-ShadowKitLog "$name restarted with PID $($newProc.Id)" -Level info
+                Set-ShadowStatus -Component $name -Status 'Running'
             } catch {
-                Write-ShadowKitLog -Message "Failed to restart $name : $_" -Level error -Module Controller
+                Write-ShadowKitLog "Failed to restart $name : $_" -Level error
+                Set-ShadowStatus -Component $name -Status 'Crashed'
             }
         }
     }
 }
 
-# Cleanup
-$pool.Close()
-$pool.Dispose()
-$mutex.ReleaseMutex()
-$mutex.Dispose()
-Write-ShadowKitLog -Message "Controller stopped" -Level info -Module Controller
+Remove-Item $lockFile -Force -ErrorAction SilentlyContinue
+Write-ShadowKitLog "Controller stopped" -Level info

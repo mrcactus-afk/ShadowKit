@@ -37,3 +37,24 @@ function Get-ShadowStatus {
 }
 
 
+
+# ---- Command sender (if not already defined) ----
+if (-not (Get-Command Send-ShadowCommand -ErrorAction SilentlyContinue)) {
+    function Send-ShadowCommand {
+        param([string]$Command, [int]$TimeoutMs = 5000)
+        $pipeName = "ShadowKit-Control"
+        try {
+            $pipe = New-Object System.IO.Pipes.NamedPipeClientStream(".", $pipeName, [System.IO.Pipes.PipeDirection]::InOut)
+            $pipe.Connect($TimeoutMs)
+            $writer = New-Object System.IO.StreamWriter($pipe)
+            $writer.AutoFlush = $true
+            $writer.WriteLine($Command)
+            $reader = New-Object System.IO.StreamReader($pipe)
+            $response = $reader.ReadLine()
+            $pipe.Close(); $pipe.Dispose()
+            return $response | ConvertFrom-Json
+        } catch {
+            return @{ error = $_.Exception.Message; success = $false }
+        }
+    }
+}

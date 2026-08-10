@@ -1,8 +1,0 @@
-export-modulemember : The Export-ModuleMember cmdlet can only be called from inside a module.
-At C:\ShadowKit\components\ShadowLogger.ps1:39 char:1
-+ export-modulemember -function Write-ShadowKitLog, Read-ShadowKitLog
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : PermissionDenied: (:) [Export-ModuleMember], InvalidOperationException
-    + FullyQualifiedErrorId : Modules_CanOnlyExecuteExportModuleMemberInsideAModule,Microsoft.PowerShell.Commands.Expo 
-   rtModuleMemberCommand
- 

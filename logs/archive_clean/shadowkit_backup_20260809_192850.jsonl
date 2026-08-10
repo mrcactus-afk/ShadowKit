@@ -1,2 +1,0 @@
-﻿2026-08-09 19:25:59 [INFO] === Master Log Rotated ===`n
-{"ts":"2026-08-09T19:28:28.6487098+03:30","level":"info","module":"MemoryCleaner","msg":"Standby: 967.1 MB – below threshold, skipping."}
