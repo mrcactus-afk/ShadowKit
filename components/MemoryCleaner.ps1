@@ -1,4 +1,7 @@
 ﻿param([switch]$Silent)
+
+. 'C:\ShadowKit\components\ShadowIPC.ps1' -ErrorAction SilentlyContinue
+Set-ShadowStatus -Component 'MemoryCleaner' -Status 'Running' -Data @{}
 $configPath = "C:\ShadowKit\config.json"
 $logDir = "C:\ShadowKit\logs"
 $logFile = Join-Path $logDir "memory.log"
@@ -149,5 +152,6 @@ while ($true) {
     }
     Start-Sleep -Seconds ($interval * 60)
 }
+
 
 

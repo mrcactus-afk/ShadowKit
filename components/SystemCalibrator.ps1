@@ -1,4 +1,7 @@
 ﻿param([switch]$Silent, [switch]$Audit, [switch]$Restore, [switch]$UserScope, [switch]$Once)
+
+. 'C:\ShadowKit\components\ShadowIPC.ps1' -ErrorAction SilentlyContinue
+Set-ShadowStatus -Component 'SystemCalibrator' -Status 'Running' -Data @{}
 . "C:\ShadowKit\components\ShadowIPC.ps1"
 $configPath = "C:\ShadowKit\config.json"
 $profilePath = "C:\ShadowKit\profile.json"
@@ -188,6 +191,7 @@ while ($true) {
 Set-ShadowStatus -Component "SystemCalibrator" -Status "Enforcing" -Data @{ LastDrift = $d; Time = (Get-Date).ToString("o") }
     Start-Sleep -Seconds ($cal.intervalMinutes * 60)
 }
+
 
 
 

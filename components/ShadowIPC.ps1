@@ -35,3 +35,5 @@ function Get-ShadowStatus {
     if (-not $jsonObj) { return $null }
     if ($Component) { return $jsonObj.$Component } else { return $jsonObj }
 }
+
+

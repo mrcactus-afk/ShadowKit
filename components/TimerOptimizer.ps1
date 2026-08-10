@@ -1,4 +1,6 @@
-﻿. "$PSScriptRoot\ShadowIPC.ps1"
+﻿. 'C:\ShadowKit\components\ShadowIPC.ps1' -ErrorAction SilentlyContinue
+Set-ShadowStatus -Component 'TimerOptimizer' -Status 'Running' -Data @{}
+. "$PSScriptRoot\ShadowIPC.ps1"
 . "$PSScriptRoot\ShadowLogger.ps1"
 
 $member = '[DllImport("ntdll.dll")] public static extern int NtSetTimerResolution(uint DesiredResolution, bool SetResolution, out uint CurrentResolution);'
@@ -17,3 +19,4 @@ while ($true) {
 
 # Keep alive for controller
 while ($true) { Start-Sleep -Seconds 3600 }
+

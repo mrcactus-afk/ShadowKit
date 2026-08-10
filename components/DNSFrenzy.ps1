@@ -1,4 +1,6 @@
-﻿. "$PSScriptRoot\ShadowIPC.ps1"
+﻿. 'C:\ShadowKit\components\ShadowIPC.ps1' -ErrorAction SilentlyContinue
+Set-ShadowStatus -Component 'DNSFrenzy' -Status 'Running' -Data @{}
+. "$PSScriptRoot\ShadowIPC.ps1"
 . "$PSScriptRoot\ShadowLogger.ps1"
 
 Get-EventSubscriber -SourceIdentifier "ShadowKitNetworkWatcher" -ErrorAction SilentlyContinue | Unregister-Event -ErrorAction SilentlyContinue
@@ -17,3 +19,4 @@ while ($true) {
     }
     Start-Sleep -Seconds 30
 }
+
