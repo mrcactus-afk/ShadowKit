@@ -1,0 +1,26 @@
+﻿{
+    "calibrator": {
+        "enabled": true,
+        "intervalMinutes": 30,
+        "allowRisky": false
+    },
+    "memory": {
+        "enabled": true,
+        "intervalMinutes": 5,
+        "thresholdPercent": 80,
+        "forceClean": false
+    },
+    "dns": {
+        "enabled": true,
+        "intervalMinutes": 10,
+        "dnsMix": false
+    },
+    "timer": {
+        "enabled": true,
+        "intervalMinutes": 30
+    },
+    "watchdog": {
+        "enabled": true,
+        "intervalMinutes": 5
+    }
+}

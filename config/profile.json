@@ -1,0 +1,19 @@
+﻿{
+    "entries": [
+        { "type": "service", "target": "DiagTrack", "value": "Disabled", "severity": "universal" },
+        { "type": "service", "target": "dmwappushservice", "value": "Disabled", "severity": "universal" },
+        { "type": "service", "target": "WerSvc", "value": "Manual", "severity": "universal" },
+        { "type": "service", "target": "SysMain", "value": "Disabled", "severity": "conditional", "condition": { "minRamGB": 16 } },
+        { "type": "service", "target": "WSearch", "value": "Manual", "severity": "conditional", "condition": { "minRamGB": 16 } },
+        { "type": "service", "target": "edgeupdate", "value": "Disabled", "severity": "universal" },
+        { "type": "service", "target": "edgeupdatem", "value": "Disabled", "severity": "universal" },
+        { "type": "registry", "target": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection", "name": "AllowTelemetry", "value": 0, "kind": "DWord", "severity": "universal" },
+        { "type": "registry", "target": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR", "name": "AppCaptureEnabled", "value": 0, "kind": "DWord", "severity": "universal" },
+        { "type": "registry", "target": "HKCU:\\System\\GameConfigStore", "name": "GameDVR_Enabled", "value": 0, "kind": "DWord", "severity": "universal" },
+        { "type": "registry", "target": "HKCU:\\Control Panel\\Mouse", "name": "MouseSpeed", "value": "0", "kind": "String", "severity": "universal" },
+        { "type": "registry", "target": "HKCU:\\Control Panel\\Mouse", "name": "MouseThreshold1", "value": "0", "kind": "String", "severity": "universal" },
+        { "type": "registry", "target": "HKCU:\\Control Panel\\Mouse", "name": "MouseThreshold2", "value": "0", "kind": "String", "severity": "universal" },
+        { "type": "registry", "target": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers", "name": "HwSchMode", "value": 2, "kind": "DWord", "severity": "universal" },
+        { "type": "power", "target": "active", "value": "381b4222-f694-41f0-9685-ff5bb260df2e", "severity": "universal" }
+    ]
+}
