@@ -2,10 +2,72 @@
 $baseDir = 'C:\ShadowKit'
 Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force
 
+# Performance counters
+$cpuCounter = $null
+try { $cpuCounter = New-Object System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total"); $cpuCounter.NextValue() | Out-Null } catch {}
+
+# Data buffers for graphs
+$script:maxPoints = 60
+$script:cpuHistory = New-Object System.Collections.Generic.List[float]
+$script:ramHistory = New-Object System.Collections.Generic.List[float]
+$script:tempHistory = New-Object System.Collections.Generic.List[float]
+for ($i=0; $i -lt $script:maxPoints; $i++) { $script:cpuHistory.Add(0); $script:ramHistory.Add(0); $script:tempHistory.Add(0) }
+
+function Get-RamPercent {
+    try {
+        $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+        $total = $os.TotalVisibleMemorySize
+        $free = $os.FreePhysicalMemory
+        return [math]::Round((($total - $free) / $total) * 100, 1)
+    } catch { return 0 }
+}
+
+function Get-CpuPercent {
+    if ($script:cpuCounter) {
+        try { return [math]::Round($script:cpuCounter.NextValue(), 1) } catch {}
+    }
+    try { return [math]::Round((Get-CimInstance Win32_Processor -ErrorAction Stop | Measure-Object -Property LoadPercentage -Average).Average, 1) } catch { return 0 }
+}
+
+function Get-TempC {
+    try {
+        $sensor = Get-CimInstance -Namespace "root\LibreHardwareMonitor" -ClassName Sensor -ErrorAction Stop | Where-Object { $_.SensorType -eq 'Temperature' -and $_.Name -match 'CPU Package' }
+        if ($sensor) { return [math]::Round($sensor.Value, 1) }
+    } catch {}
+    try {
+        $status = Get-ShadowStatus -Component 'ThermalManager'
+        if ($status -and $status.data -and $status.data.TempC) { return $status.data.TempC }
+    } catch {}
+    try {
+        $fallback = Get-CimInstance -Namespace "root\wmi" -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction Stop | Select-Object -First 1
+        if ($fallback) { return [math]::Round(($fallback.CurrentTemperature - 2732) / 10, 1) }
+    } catch {}
+    return 0
+}
+
+function Update-History([System.Collections.Generic.List[float]]$list, [float]$value) {
+    if ($list.Count -ge $script:maxPoints) { $list.RemoveAt(0) }
+    $list.Add($value)
+}
+
+function Update-GraphPolyline($polyline, $history, $chartHeight, $chartWidth) {
+    if ($history.Count -lt 2) { return }
+    $height = if ($chartHeight -gt 1) { $chartHeight } else { 150 }
+    $width = if ($chartWidth -gt 1) { $chartWidth } else { 250 }
+    $points = New-Object System.Windows.Media.PointCollection
+    $stepX = $width / ($script:maxPoints - 1)
+    for ($i = 0; $i -lt $history.Count; $i++) {
+        $x = $i * $stepX
+        $y = $height - (($history[$i] / 100) * $height)
+        $points.Add([System.Windows.Point]::new($x, $y))
+    }
+    $polyline.Points = $points
+}
+
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ShadowKit v8.0 Control Center" Height="750" Width="1050"
+        Title="ShadowKit v8.0 Control Center" Height="800" Width="1200"
         Background="#1E1E1E" WindowStartupLocation="CenterScreen">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -96,6 +158,36 @@ Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force
                     </StackPanel>
                 </StackPanel>
             </TabItem>
+            <TabItem Header="Live Graphs" Background="#252526">
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="5">
+                        <TextBlock Text="CPU %" FontSize="14" FontWeight="Bold" Foreground="#4EC9B0"/>
+                        <Canvas x:Name="CpuChart" Width="250" Height="150" Background="#1E1E1E" ClipToBounds="True">
+                            <Polyline x:Name="CpuLine" Stroke="#4EC9B0" StrokeThickness="2"/>
+                        </Canvas>
+                        <TextBlock x:Name="CpuValueText" Text="0%" FontSize="12" Foreground="#4EC9B0" Margin="0,5,0,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="5">
+                        <TextBlock Text="RAM %" FontSize="14" FontWeight="Bold" Foreground="#FFAA00"/>
+                        <Canvas x:Name="RamChart" Width="250" Height="150" Background="#1E1E1E" ClipToBounds="True">
+                            <Polyline x:Name="RamLine" Stroke="#FFAA00" StrokeThickness="2"/>
+                        </Canvas>
+                        <TextBlock x:Name="RamValueText" Text="0%" FontSize="12" Foreground="#FFAA00" Margin="0,5,0,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Margin="5">
+                        <TextBlock Text="Temperature C" FontSize="14" FontWeight="Bold" Foreground="#D16969"/>
+                        <Canvas x:Name="TempChart" Width="250" Height="150" Background="#1E1E1E" ClipToBounds="True">
+                            <Polyline x:Name="TempLine" Stroke="#D16969" StrokeThickness="2"/>
+                        </Canvas>
+                        <TextBlock x:Name="TempValueText" Text="0 C" FontSize="12" Foreground="#D16969" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
         </TabControl>
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
             <Button x:Name="RefreshAllBtn" Content="Refresh All" Width="100"/>
@@ -109,6 +201,7 @@ Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force
 $reader = New-Object System.Xml.XmlNodeReader $xaml
 $window = [System.Windows.Markup.XamlReader]::Load($reader)
 
+# Controls
 $summaryBox = $window.FindName('SummaryBox')
 $standbyText = $window.FindName('StandbyText')
 $purgeText = $window.FindName('PurgeText')
@@ -137,58 +230,78 @@ $applyGpu = $window.FindName('ApplyGpu')
 $revertGpu = $window.FindName('RevertGpu')
 $applySecurity = $window.FindName('ApplySecurity')
 $revertSecurity = $window.FindName('RevertSecurity')
+$cpuLine = $window.FindName('CpuLine')
+$ramLine = $window.FindName('RamLine')
+$tempLine = $window.FindName('TempLine')
+$cpuValueText = $window.FindName('CpuValueText')
+$ramValueText = $window.FindName('RamValueText')
+$tempValueText = $window.FindName('TempValueText')
+$cpuChart = $window.FindName('CpuChart')
+$ramChart = $window.FindName('RamChart')
+$tempChart = $window.FindName('TempChart')
 
 function Update-All {
+    # Status summary
     $status = Get-ShadowStatus
-    if (-not $status) { $summaryBox.Text = 'No status file found.'; return }
-    $sb = New-Object System.Text.StringBuilder
-    [void]$sb.AppendLine("SHADOWKIT COMPONENT STATUS")
-    [void]$sb.AppendLine("=========================")
-    foreach ($prop in $status.PSObject.Properties) {
-        $name = $prop.Name
-        $s = $prop.Value.status
-        $procId = $prop.Value.pid
-        $updated = $prop.Value.updated
-        [void]$sb.AppendLine("$name : $s (PID: $procId, Updated: $updated)")
-    }
-    $summaryBox.Text = $sb.ToString()
+    if ($status) {
+        $sb = New-Object System.Text.StringBuilder
+        [void]$sb.AppendLine("SHADOWKIT COMPONENT STATUS")
+        [void]$sb.AppendLine("=========================")
+        foreach ($prop in $status.PSObject.Properties) {
+            $name = $prop.Name
+            $s = $prop.Value.status
+            $procId = $prop.Value.pid
+            $updated = $prop.Value.updated
+            [void]$sb.AppendLine("$name : $s (PID: $procId, Updated: $updated)")
+        }
+        $summaryBox.Text = $sb.ToString()
 
-    if ($status.MemoryCleaner) {
-        $data = $status.MemoryCleaner.data
-        $standbyText.Text = if ($data.standbyMB) { "$($data.standbyMB) MB" } else { 'N/A' }
-        $purgeText.Text = if ($data.lastPurge) { $data.lastPurge } else { 'Never' }
+        # Component details
+        if ($status.MemoryCleaner) {
+            $data = $status.MemoryCleaner.data
+            $standbyText.Text = if ($data.standbyMB) { "$($data.standbyMB) MB" } else { 'N/A' }
+            $purgeText.Text = if ($data.lastPurge) { $data.lastPurge } else { 'Never' }
+        }
+        if ($status.DNSFrenzy) {
+            $data = $status.DNSFrenzy.data
+            $dnsPrimaryText.Text = if ($data.primary) { $data.primary } else { 'N/A' }
+            $dnsSecondaryText.Text = if ($data.secondary) { $data.secondary } else { 'N/A' }
+            $dnsNameText.Text = if ($data.name) { $data.name } else { 'N/A' }
+        }
+        if ($status.TimerOptimizer) {
+            $data = $status.TimerOptimizer.data
+            $timerResText.Text = if ($data.resolutionMs) { "$($data.resolutionMs) ms" } else { 'N/A' }
+            $timerMinText.Text = if ($data.minResolutionMs) { "$($data.minResolutionMs) ms" } else { 'N/A' }
+        }
+        if ($status.SystemCalibrator) {
+            $data = $status.SystemCalibrator.data
+            $calibDriftText.Text = if ($data.LastDrift) { $data.LastDrift } else { 'N/A' }
+            $calibEntriesText.Text = if ($data.Entries) { $data.Entries } else { 'N/A' }
+        }
+    } else {
+        $summaryBox.Text = 'No status file found.'
     }
-    if ($status.DNSFrenzy) {
-        $data = $status.DNSFrenzy.data
-        $dnsPrimaryText.Text = if ($data.primary) { $data.primary } else { 'N/A' }
-        $dnsSecondaryText.Text = if ($data.secondary) { $data.secondary } else { 'N/A' }
-        $dnsNameText.Text = if ($data.name) { $data.name } else { 'N/A' }
-    }
-    if ($status.TimerOptimizer) {
-        $data = $status.TimerOptimizer.data
-        $timerResText.Text = if ($data.resolutionMs) { "$($data.resolutionMs) ms" } else { 'N/A' }
-        $timerMinText.Text = if ($data.minResolutionMs) { "$($data.minResolutionMs) ms" } else { 'N/A' }
-    }
-    if ($status.SystemCalibrator) {
-        $data = $status.SystemCalibrator.data
-        $calibDriftText.Text = if ($data.LastDrift) { $data.LastDrift } else { 'N/A' }
-        $calibEntriesText.Text = if ($data.Entries) { $data.Entries } else { 'N/A' }
-    }
+
+    # Live graphs update
+    $cpu = Get-CpuPercent
+    $ram = Get-RamPercent
+    $temp = Get-TempC
+    Update-History $script:cpuHistory $cpu
+    Update-History $script:ramHistory $ram
+    Update-History $script:tempHistory $temp
+    Update-GraphPolyline $cpuLine $script:cpuHistory $cpuChart.Height $cpuChart.Width
+    Update-GraphPolyline $ramLine $script:ramHistory $ramChart.Height $ramChart.Width
+    Update-GraphPolyline $tempLine $script:tempHistory $tempChart.Height $tempChart.Width
+    $cpuValueText.Text = "$cpu%"
+    $ramValueText.Text = "$ram%"
+    $tempValueText.Text = "$temp C"
 }
 
+# Button events (same as before)
 $refreshAllBtn.Add_Click({ Update-All })
-$purgeBtn.Add_Click({
-    Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force
-    try { $resp = Send-ShadowCommand -Action 'purge' -Payload @{ component = 'MemoryCleaner' }; [System.Windows.MessageBox]::Show($resp.result, 'Purge') } catch { [System.Windows.MessageBox]::Show($_.Exception.Message, 'Purge Error') }
-})
-$refreshDnsBtn.Add_Click({
-    Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force
-    try { $resp = Send-ShadowCommand -Action 'refresh' -Payload @{ component = 'DNSFrenzy' }; [System.Windows.MessageBox]::Show($resp.result, 'DNS Refresh') } catch { [System.Windows.MessageBox]::Show($_.Exception.Message, 'DNS Error') }
-})
-$calibBtn.Add_Click({
-    Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force
-    try { $resp = Send-ShadowCommand -Action 'enforce' -Payload @{ component = 'SystemCalibrator' }; [System.Windows.MessageBox]::Show($resp.result, 'Enforcement') } catch { [System.Windows.MessageBox]::Show($_.Exception.Message, 'Enforcement Error') }
-})
+$purgeBtn.Add_Click({ Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force; try { $resp = Send-ShadowCommand -Action 'purge' -Payload @{ component = 'MemoryCleaner' }; [System.Windows.MessageBox]::Show($resp.result, 'Purge') } catch { [System.Windows.MessageBox]::Show($_.Exception.Message, 'Purge Error') } })
+$refreshDnsBtn.Add_Click({ Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force; try { $resp = Send-ShadowCommand -Action 'refresh' -Payload @{ component = 'DNSFrenzy' }; [System.Windows.MessageBox]::Show($resp.result, 'DNS Refresh') } catch { [System.Windows.MessageBox]::Show($_.Exception.Message, 'DNS Error') } })
+$calibBtn.Add_Click({ Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force; try { $resp = Send-ShadowCommand -Action 'enforce' -Payload @{ component = 'SystemCalibrator' }; [System.Windows.MessageBox]::Show($resp.result, 'Enforcement') } catch { [System.Windows.MessageBox]::Show($_.Exception.Message, 'Enforcement Error') } })
 $applyGameBtn.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\GameOptimizer.ps1`" -Apply"; [System.Windows.MessageBox]::Show('GameOptimizer applied.') })
 $revertGameBtn.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\GameOptimizer.ps1`" -Revert"; [System.Windows.MessageBox]::Show('GameOptimizer reverted.') })
 $applyNetwork.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\NetworkOptimizer.ps1`" -Apply"; [System.Windows.MessageBox]::Show('NetworkOptimizer applied.') })
@@ -204,9 +317,11 @@ $revertGpu.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -Argumen
 $applySecurity.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\SecurityTweaker.ps1`" -Apply"; [System.Windows.MessageBox]::Show('SecurityTweaker applied. Reboot for full effect.') })
 $revertSecurity.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\SecurityTweaker.ps1`" -Revert"; [System.Windows.MessageBox]::Show('SecurityTweaker reverted.') })
 
+# Timer and show
 $timer = New-Object System.Windows.Threading.DispatcherTimer
-$timer.Interval = [TimeSpan]::FromSeconds(3)
+$timer.Interval = [TimeSpan]::FromSeconds(2)
 $timer.Add_Tick({ Update-All })
 $timer.Start()
 Update-All
 $window.ShowDialog() | Out-Null
+
