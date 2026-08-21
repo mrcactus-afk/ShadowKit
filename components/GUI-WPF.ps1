@@ -188,6 +188,32 @@ function Update-GraphPolyline($polyline, $history, $chartHeight, $chartWidth) {
                     </StackPanel>
                 </Grid>
             </TabItem>
+            <TabItem Header="Settings" Background="#252526">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="Config File:" FontSize="14" Foreground="#F1F1F1" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="SettingsFileCombo" Width="250" Height="28" SelectedIndex="0">
+                            <ComboBoxItem Content="config.json"/>
+                            <ComboBoxItem Content="config\profile.json"/>
+                            <ComboBoxItem Content="config\servers.json"/>
+                            <ComboBoxItem Content="config\thermalmanager.json"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+                        <Button x:Name="SettingsLoadBtn" Content="Load" Width="100"/>
+                        <Button x:Name="SettingsValidateBtn" Content="Validate" Width="100"/>
+                        <Button x:Name="SettingsSaveBtn" Content="Save" Width="100"/>
+                    </StackPanel>
+                    <TextBox Grid.Row="2" x:Name="SettingsContentBox" Background="#1E1E1E" Foreground="#F1F1F1" BorderThickness="1" BorderBrush="#3F3F46" FontFamily="Consolas" FontSize="13" AcceptsReturn="True" AcceptsTab="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
+                    <TextBlock Grid.Row="3" x:Name="SettingsStatusText" Text="Select a config file and click Load." FontSize="12" Foreground="#4EC9B0" Margin="0,10,0,0"/>
+                </Grid>
+            </TabItem>
         </TabControl>
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
             <Button x:Name="RefreshAllBtn" Content="Refresh All" Width="100"/>
@@ -318,10 +344,81 @@ $applySecurity.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -Arg
 $revertSecurity.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\SecurityTweaker.ps1`" -Revert"; [System.Windows.MessageBox]::Show('SecurityTweaker reverted.') })
 
 # Timer and show
+# Settings tab controls
+$settingsFileCombo = $window.FindName('SettingsFileCombo')
+$settingsContentBox = $window.FindName('SettingsContentBox')
+$settingsLoadBtn = $window.FindName('SettingsLoadBtn')
+$settingsValidateBtn = $window.FindName('SettingsValidateBtn')
+$settingsSaveBtn = $window.FindName('SettingsSaveBtn')
+$settingsStatusText = $window.FindName('SettingsStatusText')
+
+$configFiles = @{
+    'config.json' = Join-Path $baseDir 'config.json'
+    'config\profile.json' = Join-Path $baseDir 'config\profile.json'
+    'config\servers.json' = Join-Path $baseDir 'config\servers.json'
+    'config\thermalmanager.json' = Join-Path $baseDir 'config\thermalmanager.json'
+}
+
+function Get-SelectedConfigPath {
+    $selected = $settingsFileCombo.SelectedItem.Content
+    if ($configFiles.ContainsKey($selected)) { return $configFiles[$selected] }
+    return $null
+}
+
+$settingsLoadBtn.Add_Click({
+    $path = Get-SelectedConfigPath
+    if ($path -and (Test-Path $path)) {
+        $settingsContentBox.Text = Get-Content $path -Raw
+        $settingsStatusText.Text = "Loaded: $path"
+        $settingsStatusText.Foreground = [System.Windows.Media.Brushes]::GreenYellow
+    } else {
+        $settingsStatusText.Text = "Config file not found."
+        $settingsStatusText.Foreground = [System.Windows.Media.Brushes]::Tomato
+    }
+})
+
+$settingsValidateBtn.Add_Click({
+    $path = Get-SelectedConfigPath
+    $content = $settingsContentBox.Text
+    try {
+        $null = $content | ConvertFrom-Json -ErrorAction Stop
+        $settingsStatusText.Text = "JSON is valid."
+        $settingsStatusText.Foreground = [System.Windows.Media.Brushes]::GreenYellow
+    } catch {
+        $settingsStatusText.Text = "Invalid JSON: $($_.Exception.Message)"
+        $settingsStatusText.Foreground = [System.Windows.Media.Brushes]::Tomato
+    }
+})
+
+$settingsSaveBtn.Add_Click({
+    $path = Get-SelectedConfigPath
+    $content = $settingsContentBox.Text
+    try {
+        $null = $content | ConvertFrom-Json -ErrorAction Stop
+        Set-Content -Path $path -Value $content -Encoding UTF8
+        $settingsStatusText.Text = "Saved: $path"
+        $settingsStatusText.Foreground = [System.Windows.Media.Brushes]::GreenYellow
+    } catch {
+        $settingsStatusText.Text = "Cannot save invalid JSON: $($_.Exception.Message)"
+        $settingsStatusText.Foreground = [System.Windows.Media.Brushes]::Tomato
+    }
+})
+
+# Auto-load default config.json on start
+# Manually load default config.json on start
+$defaultConfigPath = Join-Path $baseDir 'config.json'
+if (Test-Path $defaultConfigPath) {
+    $settingsContentBox.Text = Get-Content $defaultConfigPath -Raw
+    $settingsStatusText.Text = "Loaded: $defaultConfigPath"
+    $settingsStatusText.Foreground = [System.Windows.Media.Brushes]::GreenYellow
+}
+
 $timer = New-Object System.Windows.Threading.DispatcherTimer
 $timer.Interval = [TimeSpan]::FromSeconds(2)
 $timer.Add_Tick({ Update-All })
 $timer.Start()
 Update-All
 $window.ShowDialog() | Out-Null
+
+
 
