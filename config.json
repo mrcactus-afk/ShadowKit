@@ -20,7 +20,6 @@
         "intervalMinutes": 30
     },
     "watchdog": {
-        "enabled": true,
-        "intervalMinutes": 5
+        "enabled": false
     }
 }
