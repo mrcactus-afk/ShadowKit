@@ -1,11 +1,11 @@
 ﻿{
-    "HighTemp": 90,
-    "LowTemp": 70,
-    "CooldownSamples": 3,
-    "PollIntervalSec": 5,
-    "CoolingPlan": "381b4222-f694-41f0-9685-ff5bb260df2e",
-    "PerformancePlan": "e9a42b02-d5df-448d-aa00-03f14749eb61",
-    "FanControlMaxConfig": null,
-    "ThrottleStopCoolingINI": null,
-    "ThrottleStopPerformanceINI": null
+    "HighTemp":  90,
+    "LowTemp":  70,
+    "CooldownSamples":  3,
+    "PollIntervalSec":  5,
+    "CoolingPlan":  "381b4222-f694-41f0-9685-ff5bb260df2e",
+    "PerformancePlan":  "381b4222-f694-41f0-9685-ff5bb260df2e",
+    "FanControlMaxConfig":  null,
+    "ThrottleStopCoolingINI":  null,
+    "ThrottleStopPerformanceINI":  null
 }
