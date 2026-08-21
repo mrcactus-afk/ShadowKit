@@ -1,3 +1,7 @@
+﻿## v8.0.2 (2026-08-21)
+
+- Add Build-Release.ps1, Install-ShadowKit.ps1, Test-SetupDryRun.ps1
+- Create release zip with SHA256 checksum
 # Changelog
 
 ## v8.0.1 (2026-08-21)
@@ -26,3 +30,4 @@
 - Self-update with rollback
 - WPF dashboard with live graphs and settings editor
 - Comprehensive validation and diagnostic checker
+
