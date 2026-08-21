@@ -29,7 +29,10 @@ foreach ($f in $required) {
 }
 
 # Check scheduled task
-$task = Get-ScheduledTask -TaskName 'ShadowKitController' -ErrorAction SilentlyContinue
+$taskController = Get-ScheduledTask -TaskName 'ShadowKitController' -ErrorAction SilentlyContinue
+$taskBootReapply = Get-ScheduledTask -TaskName 'ShadowKitBootReapply' -ErrorAction SilentlyContinue
+Check 'Scheduled task ShadowKitController' ($taskController -ne $null) 'registered'
+Check 'Scheduled task ShadowKitBootReapply' ($taskBootReapply -ne $null) 'registered'
 Check "Scheduled task" ($task -ne $null) "registered"
 
 # Check status file
@@ -50,3 +53,4 @@ Check "Controller process" ($controllerProcs.Count -gt 0) "count: $($controllerP
 
 Write-Host "`nValidation complete. Failures: $fail" -ForegroundColor Cyan
 if ($fail -gt 0) { exit 1 } else { exit 0 }
+
