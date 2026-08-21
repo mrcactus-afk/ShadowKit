@@ -5,7 +5,7 @@ Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ShadowKit v8.0 Control Center" Height="650" Width="950"
+        Title="ShadowKit v8.0 Control Center" Height="750" Width="1050"
         Background="#1E1E1E" WindowStartupLocation="CenterScreen">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -55,6 +55,47 @@ Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force
                     <Button x:Name="CalibBtn" Content="Run Enforcement" Width="160" HorizontalAlignment="Left" Margin="0,10,0,0"/>
                 </StackPanel>
             </TabItem>
+            <TabItem Header="Tier1 Optimizers" Background="#252526">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Network Optimizer" FontSize="16" FontWeight="Bold" Foreground="#F1F1F1"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,15">
+                            <Button x:Name="ApplyNetwork" Content="Apply" Width="100"/>
+                            <Button x:Name="RevertNetwork" Content="Revert" Width="100"/>
+                        </StackPanel>
+                        <TextBlock Text="File System Tuner" FontSize="16" FontWeight="Bold" Foreground="#F1F1F1"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,15">
+                            <Button x:Name="ApplyFs" Content="Apply" Width="100"/>
+                            <Button x:Name="RevertFs" Content="Revert" Width="100"/>
+                        </StackPanel>
+                        <TextBlock Text="Power Tuner" FontSize="16" FontWeight="Bold" Foreground="#F1F1F1"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,15">
+                            <Button x:Name="ApplyPower" Content="Apply" Width="100"/>
+                            <Button x:Name="RevertPower" Content="Revert" Width="100"/>
+                        </StackPanel>
+                        <TextBlock Text="Debloat Enforcer" FontSize="16" FontWeight="Bold" Foreground="#F1F1F1"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,15">
+                            <Button x:Name="ApplyDebloat" Content="Apply" Width="100"/>
+                            <Button x:Name="RevertDebloat" Content="Revert" Width="100"/>
+                        </StackPanel>
+                        <TextBlock Text="GPU Tuner" FontSize="16" FontWeight="Bold" Foreground="#F1F1F1"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,15">
+                            <Button x:Name="ApplyGpu" Content="Apply" Width="100"/>
+                            <Button x:Name="RevertGpu" Content="Revert" Width="100"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="SecurityTweaker" Background="#252526">
+                <StackPanel Margin="10">
+                    <TextBlock Text="WARNING: Disabling VBS/HVCI lowers security for performance gains." FontSize="14" FontWeight="Bold" Foreground="Red" TextWrapping="Wrap"/>
+                    <TextBlock Text="Applies to Windows kernel protections. Requires reboot for full effect." FontSize="12" Foreground="#FFAA00" Margin="0,5,0,10" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                        <Button x:Name="ApplySecurity" Content="Apply" Width="100"/>
+                        <Button x:Name="RevertSecurity" Content="Revert" Width="100"/>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
         </TabControl>
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
             <Button x:Name="RefreshAllBtn" Content="Refresh All" Width="100"/>
@@ -84,6 +125,18 @@ $calibBtn = $window.FindName('CalibBtn')
 $refreshAllBtn = $window.FindName('RefreshAllBtn')
 $applyGameBtn = $window.FindName('ApplyGameBtn')
 $revertGameBtn = $window.FindName('RevertGameBtn')
+$applyNetwork = $window.FindName('ApplyNetwork')
+$revertNetwork = $window.FindName('RevertNetwork')
+$applyFs = $window.FindName('ApplyFs')
+$revertFs = $window.FindName('RevertFs')
+$applyPower = $window.FindName('ApplyPower')
+$revertPower = $window.FindName('RevertPower')
+$applyDebloat = $window.FindName('ApplyDebloat')
+$revertDebloat = $window.FindName('RevertDebloat')
+$applyGpu = $window.FindName('ApplyGpu')
+$revertGpu = $window.FindName('RevertGpu')
+$applySecurity = $window.FindName('ApplySecurity')
+$revertSecurity = $window.FindName('RevertSecurity')
 
 function Update-All {
     $status = Get-ShadowStatus
@@ -100,7 +153,6 @@ function Update-All {
     }
     $summaryBox.Text = $sb.ToString()
 
-    # Per-component details
     if ($status.MemoryCleaner) {
         $data = $status.MemoryCleaner.data
         $standbyText.Text = if ($data.standbyMB) { "$($data.standbyMB) MB" } else { 'N/A' }
@@ -137,14 +189,20 @@ $calibBtn.Add_Click({
     Import-Module (Join-Path $baseDir 'modules\ShadowIPC.psm1') -Force
     try { $resp = Send-ShadowCommand -Action 'enforce' -Payload @{ component = 'SystemCalibrator' }; [System.Windows.MessageBox]::Show($resp.result, 'Enforcement') } catch { [System.Windows.MessageBox]::Show($_.Exception.Message, 'Enforcement Error') }
 })
-$applyGameBtn.Add_Click({
-    Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\GameOptimizer.ps1`" -Apply"
-    [System.Windows.MessageBox]::Show('GameOptimizer apply started.','GameOptimizer')
-})
-$revertGameBtn.Add_Click({
-    Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\GameOptimizer.ps1`" -Revert"
-    [System.Windows.MessageBox]::Show('GameOptimizer revert started.','GameOptimizer')
-})
+$applyGameBtn.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\GameOptimizer.ps1`" -Apply"; [System.Windows.MessageBox]::Show('GameOptimizer applied.') })
+$revertGameBtn.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\GameOptimizer.ps1`" -Revert"; [System.Windows.MessageBox]::Show('GameOptimizer reverted.') })
+$applyNetwork.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\NetworkOptimizer.ps1`" -Apply"; [System.Windows.MessageBox]::Show('NetworkOptimizer applied.') })
+$revertNetwork.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\NetworkOptimizer.ps1`" -Revert"; [System.Windows.MessageBox]::Show('NetworkOptimizer reverted.') })
+$applyFs.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\FileSystemTuner.ps1`" -Apply"; [System.Windows.MessageBox]::Show('FileSystemTuner applied.') })
+$revertFs.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\FileSystemTuner.ps1`" -Revert"; [System.Windows.MessageBox]::Show('FileSystemTuner reverted.') })
+$applyPower.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\PowerTuner.ps1`" -Apply"; [System.Windows.MessageBox]::Show('PowerTuner applied.') })
+$revertPower.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\PowerTuner.ps1`" -Revert"; [System.Windows.MessageBox]::Show('PowerTuner reverted.') })
+$applyDebloat.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\DebloatEnforcer.ps1`" -Apply"; [System.Windows.MessageBox]::Show('DebloatEnforcer applied.') })
+$revertDebloat.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\DebloatEnforcer.ps1`" -Revert"; [System.Windows.MessageBox]::Show('DebloatEnforcer reverted.') })
+$applyGpu.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\GPUTuner.ps1`" -Apply"; [System.Windows.MessageBox]::Show('GPUTuner applied.') })
+$revertGpu.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\GPUTuner.ps1`" -Revert"; [System.Windows.MessageBox]::Show('GPUTuner reverted.') })
+$applySecurity.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\SecurityTweaker.ps1`" -Apply"; [System.Windows.MessageBox]::Show('SecurityTweaker applied. Reboot for full effect.') })
+$revertSecurity.Add_Click({ Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\components\SecurityTweaker.ps1`" -Revert"; [System.Windows.MessageBox]::Show('SecurityTweaker reverted.') })
 
 $timer = New-Object System.Windows.Threading.DispatcherTimer
 $timer.Interval = [TimeSpan]::FromSeconds(3)
@@ -152,4 +210,3 @@ $timer.Add_Tick({ Update-All })
 $timer.Start()
 Update-All
 $window.ShowDialog() | Out-Null
-

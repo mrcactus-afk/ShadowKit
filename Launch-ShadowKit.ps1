@@ -17,6 +17,8 @@ function Show-Menu {
     Write-Host "  [8] Revert GameOptimizer" -ForegroundColor White
     Write-Host "  [9] Apply Tier1 Optimizations" -ForegroundColor White
     Write-Host "  [10] Revert Tier1 Optimizations" -ForegroundColor White
+    Write-Host "  [11] Apply SecurityTweaker" -ForegroundColor White
+    Write-Host "  [12] Revert SecurityTweaker" -ForegroundColor White
     Write-Host "  [Q] Quit" -ForegroundColor Gray
     Write-Host ""
 }
@@ -35,6 +37,8 @@ do {
         "8" { Start-Process powershell -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$root\components\GameOptimizer.ps1`" -Revert"; Write-Host "GameOptimizer revert started."; Pause }
         "9" { & (Join-Path $root 'Tier1-Apply.ps1'); Pause }
         "10" { & (Join-Path $root 'Tier1-Revert.ps1'); Pause }
+        "11" { Start-Process powershell -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$root\components\SecurityTweaker.ps1`" -Apply"; Write-Host "SecurityTweaker apply started."; Pause }
+        "12" { Start-Process powershell -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$root\components\SecurityTweaker.ps1`" -Revert"; Write-Host "SecurityTweaker revert started."; Pause }
         "Q" { exit }
         "q" { exit }
         default { Write-Host "Invalid option." -ForegroundColor Red; Start-Sleep 1 }
