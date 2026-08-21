@@ -15,6 +15,8 @@ function Show-Menu {
     Write-Host "  [6] Restore SystemCalibrator" -ForegroundColor White
     Write-Host "  [7] Apply GameOptimizer" -ForegroundColor White
     Write-Host "  [8] Revert GameOptimizer" -ForegroundColor White
+    Write-Host "  [9] Apply Tier1 Optimizations" -ForegroundColor White
+    Write-Host "  [10] Revert Tier1 Optimizations" -ForegroundColor White
     Write-Host "  [Q] Quit" -ForegroundColor Gray
     Write-Host ""
 }
@@ -31,6 +33,8 @@ do {
         "6" { & (Join-Path $root 'components\SystemCalibrator.ps1') -Restore; Pause }
         "7" { Start-Process powershell -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$root\components\GameOptimizer.ps1`" -Apply"; Write-Host "GameOptimizer apply started."; Pause }
         "8" { Start-Process powershell -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$root\components\GameOptimizer.ps1`" -Revert"; Write-Host "GameOptimizer revert started."; Pause }
+        "9" { & (Join-Path $root 'Tier1-Apply.ps1'); Pause }
+        "10" { & (Join-Path $root 'Tier1-Revert.ps1'); Pause }
         "Q" { exit }
         "q" { exit }
         default { Write-Host "Invalid option." -ForegroundColor Red; Start-Sleep 1 }
