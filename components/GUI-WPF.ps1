@@ -214,11 +214,25 @@ function Update-GraphPolyline($polyline, $history, $chartHeight, $chartWidth) {
                     <TextBlock Grid.Row="3" x:Name="SettingsStatusText" Text="Select a config file and click Load." FontSize="12" Foreground="#4EC9B0" Margin="0,10,0,0"/>
                 </Grid>
             </TabItem>
+            <TabItem Header="Events" Background="#252526">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                        <Button x:Name="EventsRefreshBtn" Content="Refresh Events" Width="120"/>
+                        <Button x:Name="EventsClearBtn" Content="Clear Events Log" Width="120"/>
+                    </StackPanel>
+                    <TextBox Grid.Row="1" x:Name="EventsBox" Background="#1E1E1E" Foreground="#F1F1F1" BorderThickness="1" BorderBrush="#3F3F46" FontFamily="Consolas" FontSize="12" IsReadOnly="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
+                </Grid>
+            </TabItem>
         </TabControl>
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,10,0,0">
             <Button x:Name="RefreshAllBtn" Content="Refresh All" Width="100"/>
             <Button x:Name="ApplyGameBtn" Content="Apply GameOptimizer" Width="150"/>
             <Button x:Name="RevertGameBtn" Content="Revert GameOptimizer" Width="150"/>
+            <Button x:Name="UpdateBtn" Content="Update ShadowKit" Width="150"/>
         </StackPanel>
     </Grid>
 </Window>
@@ -413,12 +427,45 @@ if (Test-Path $defaultConfigPath) {
     $settingsStatusText.Foreground = [System.Windows.Media.Brushes]::GreenYellow
 }
 
+# Events tab controls
+$eventsRefreshBtn = $window.FindName('EventsRefreshBtn')
+$eventsClearBtn = $window.FindName('EventsClearBtn')
+$eventsBox = $window.FindName('EventsBox')
+$eventsLogPath = Join-Path $baseDir 'logs\events.log'
+
+function Refresh-EventsLog {
+    if (Test-Path $eventsLogPath) {
+        $eventsBox.Text = Get-Content $eventsLogPath -Tail 200 | Out-String
+    } else {
+        $eventsBox.Text = 'No events log found.'
+    }
+}
+
+$eventsRefreshBtn.Add_Click({ Refresh-EventsLog })
+$eventsClearBtn.Add_Click({
+    if (Test-Path $eventsLogPath) {
+        Clear-Content $eventsLogPath
+        $eventsBox.Text = 'Events log cleared.'
+    }
+})
+
+$updateBtn = $window.FindName('UpdateBtn')
+$updateBtn.Add_Click({
+    $result = [System.Windows.MessageBox]::Show('Run ShadowKit self-update? This will pull from GitHub and restart the controller.', 'Update', 'YesNo', 'Question')
+    if ($result -eq 'Yes') {
+        Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$baseDir\Update-ShadowKit.ps1`""
+        [System.Windows.MessageBox]::Show('Update started. Check logs\update.log for progress.', 'Update')
+    }
+})
+
 $timer = New-Object System.Windows.Threading.DispatcherTimer
 $timer.Interval = [TimeSpan]::FromSeconds(2)
 $timer.Add_Tick({ Update-All })
 $timer.Start()
 Update-All
 $window.ShowDialog() | Out-Null
+
+
 
 
 

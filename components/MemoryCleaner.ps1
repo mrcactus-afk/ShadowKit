@@ -52,7 +52,7 @@ while ($true) {
     $standbyMB = [math]::Round($standbyBytes / 1MB, 1)
     $purgeStatus = 'Idle'
     $lastPurge = $null
-    if ($standbyBytes -gt 1GB) {
+    if ($standbyBytes -ge 500MB) {
         $status = [CacheCleaner]::PurgeStandby()
         if ($status -eq 0) {
             $purgeStatus = 'Success'
@@ -68,4 +68,5 @@ while ($true) {
     }
     Start-Sleep -Seconds 300
 }
+
 
